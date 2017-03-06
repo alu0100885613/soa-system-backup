@@ -7,18 +7,18 @@ En principio la aquitectura será muchos a uno. Es decir, un cliente enviará lo
  * La función del servidor es recibir los datos desde el cliente de origen y retransmitirlos hacia los clientes de destino.
    * Sólo hace falta que haya un servidor en ejecución.
    * El puerto de escucha del servidor debe ser configurable desde la GUI.
- * Al mismo tiempo se pueden estar ejecutándo múltiples clientes en distintas máquinas.
+ * Al mismo tiempo se pueden estar ejecutando múltiples clientes en distintas máquinas.
    * Uno será el origen de los datos a copiar. Los leerá y enviará al servidor para su retransmisión.
    * El resto recibirán los datos desde el servidor para hacer la copia de seguridad en un directorio local.
    * La IP y el puerto del servidor al que deben conectarse los clientes debe ser configurable desde la GUI
-   * En cada cliente la carpeta origen o destino de los archivos deben ser configurable desde la GUI.
+   * En cada cliente la carpeta origen o destino de los archivos debe ser configurable desde la GUI.
  * El sistema podría funcionar a así:
    1. El servidor se inicia. El usuario puede configurar el puerto y ponerlo a la escucha.
    2. Un cliente se inicia.
       * El usuario puede configurar la dirección del servidor, elegir la carpeta de destino y conectarlo como cliente de destino.
       * O, el usuario puede configurar la dirección del servidor, elegir la carpeta de origen, indicar cuántos destinos deben estar conectados y conectar como cliente de origen.
    3. Los clientes de destino esperan indefinidamente hasta que el servidor inicia la transferencia.
-   4. Los clientes de origen esperan hasta que hay suficientes clientes conectados en el servidor, entonces empiezan a recorrer el directorio y a transferir hace el servidor.
+   4. Los clientes de origen esperan hasta que hay suficientes clientes conectados en el servidor, entonces empiezan a recorrer el directorio y a transferir hacia el servidor.
    5. El servidor envía los datos recibidos del cliente origen a los clientes destino, que deben reconstruir el arbol de directorios en su carpeta local.
    6. Durante la transferencia los clientes y el servidor deben mostrar el progreso de la copia:
       * El nombre del archivo que se está copiando actualmente.
@@ -51,7 +51,7 @@ El paso más importante es el diseño del protocolo. Algunas cuestiones son gene
 Otras dependen de la aplicación concreta que estamos a desarrollando. Hay que pensar en las distintas etapas y qué información hay que comunicar y a quién en cada una:
 
  * ¿Serán necesarios diferentes tipos de mensajes? ¿cómo se van a diferenciar unos de otros?
- * ¿Cómo va a saber el cliente origen cuando iniciar la transferencia?
+ * ¿Cómo va a saber el cliente origen cuándo iniciar la transferencia?
  * ¿Qué información debe ir junto a los datos de los archivos? ¿ruta? ¿tamaño?
  * ¿Qué información hace falta para mantener actualizada las barras de progreso?
  
