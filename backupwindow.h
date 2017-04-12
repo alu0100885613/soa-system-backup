@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QDebug>
 #include <QTimer>
+#include <QHostInfo>
+#include <QNetworkInterface>
 
 namespace Ui {
 class BackupWindow;
@@ -19,6 +21,8 @@ public:
 
 private slots:
     void changeStatus(void);
+
+    void initializeElementsGUI(void);
 
     void showTime(void);
 
