@@ -2,6 +2,8 @@
 #define BACKUPWINDOW_H
 
 #include <QMainWindow>
+#include <QDebug>
+#include <QTimer>
 
 namespace Ui {
 class BackupWindow;
@@ -15,8 +17,21 @@ public:
     explicit BackupWindow(QWidget *parent = 0);
     ~BackupWindow();
 
+private slots:
+    void changeStatus(void);
+
+    void showTime(void);
+
+    void on_modeComboBox_activated(int index);
+
+    void on_connectButton_clicked();
+
+
 private:
     Ui::BackupWindow *ui;
+    int status_;
+    QTimer* timer_;
+    long timeConnected_;
 };
 
 #endif // BACKUPWINDOW_H
