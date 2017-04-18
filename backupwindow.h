@@ -6,6 +6,9 @@
 #include <QTimer>
 #include <QHostInfo>
 #include <QNetworkInterface>
+#include <QFileDialog>
+#include <QTcpServer>
+#include <QTcpSocket>
 
 namespace Ui {
 class BackupWindow;
@@ -30,12 +33,31 @@ private slots:
 
     void on_connectButton_clicked();
 
+    void on_browseButton_clicked();
+
+    int whatAmI();
+
+    void tryToConnect();
+
+    void letsDisconnect();
+
+    void connectToServer();
+
+    void connectToWorld();
+
+    void welcome();
+
+    void readyRec();
 
 private:
     Ui::BackupWindow *ui;
     int status_;
     QTimer* timer_;
     long timeConnected_;
+    int IamID_;
+    QTcpServer* tcpServer_;
+    QTcpSocket* tcpSocket_;
+
 };
 
 #endif // BACKUPWINDOW_H

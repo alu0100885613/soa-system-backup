@@ -6,11 +6,16 @@ BackupWindow::BackupWindow(QWidget *parent) :
     ui(new Ui::BackupWindow),
     status_(0),
     timer_(new QTimer),
-    timeConnected_(0)
+    timeConnected_(0),
+    IamID_(0),
+    tcpServer_(new QTcpServer(this)),
+    tcpSocket_(new QTcpSocket(this))
 {
     ui->setupUi(this);
 
     connect(timer_, SIGNAL(timeout()), this, SLOT(showTime()));
+    connect(tcpServer_,SIGNAL(newConnection()),this,SLOT(welcome()));
+    connect(tcpSocket_,SIGNAL(readyRead()),this,SLOT(readyRec()));
 
     initializeElementsGUI();
 
@@ -19,6 +24,9 @@ BackupWindow::BackupWindow(QWidget *parent) :
 BackupWindow::~BackupWindow()
 {
     delete ui;
+    delete timer_;
+    delete tcpServer_;
+    delete tcpSocket_;
 }
 
 void BackupWindow::changeStatus()
@@ -34,6 +42,9 @@ void BackupWindow::initializeElementsGUI()
     ui->directoryLine->setEnabled(false);
     ui->ipLine->setEnabled(false);
     ui->portLine->setEnabled(false);
+    ui->directoryLine->setText("");
+    ui->ipLine->setText("");
+    ui->portLine->setText("");
     QList<QHostAddress> list = QNetworkInterface::allAddresses();
 
     for(int nIter=0; nIter<list.count(); nIter++)
@@ -61,11 +72,13 @@ void BackupWindow::showTime()
         QString text = QString::number(hours) + " " + QString::number(minutes) + " " + QString::number(seconds);
         ui->lcdNumber->display(text);
     }
-    qDebug() << hours << minutes << seconds;
+
 }
 
 void BackupWindow::on_modeComboBox_activated(int index)
 {
+    IamID_ = index;
+
     if(index == 0)
         initializeElementsGUI();
 
@@ -73,17 +86,23 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->browseButton->setEnabled(true);
         ui->connectButton->setEnabled(true);
         ui->sendButton->setEnabled(true);
-        ui->directoryLine->setEnabled(true);
+        ui->directoryLine->setEnabled(false);
         ui->ipLine->setEnabled(true);
         ui->portLine->setEnabled(true);
+        ui->directoryLine->setText("");
+        ui->ipLine->setText("");
+        ui->portLine->setText("");
     }
     if(index == 2){
         ui->connectButton->setEnabled(true);
         ui->browseButton->setEnabled(true);
         ui->sendButton->setEnabled(false);
-        ui->directoryLine->setEnabled(true);
+        ui->directoryLine->setEnabled(false);
         ui->ipLine->setEnabled(true);
         ui->portLine->setEnabled(true);
+        ui->directoryLine->setText("");
+        ui->ipLine->setText("");
+        ui->portLine->setText("");
     }
     if(index == 3){
         ui->connectButton->setEnabled(true);
@@ -92,8 +111,16 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->directoryLine->setEnabled(false);
         ui->ipLine->setEnabled(false);
         ui->portLine->setEnabled(true);
+        ui->directoryLine->setText("");
+        ui->ipLine->setText("");
+        ui->portLine->setText("");
     }
 
+}
+
+int BackupWindow::whatAmI()
+{
+    return IamID_;
 }
 
 void BackupWindow::on_connectButton_clicked()
@@ -102,20 +129,92 @@ void BackupWindow::on_connectButton_clicked()
     const QString connectString = "Connect";
 
     if(!status_) {
-        //toda la pesca que envía al conectar
+
+        tryToConnect();
 
         timer_->start(1000);
         ui->modeComboBox->setEnabled(false);
+        ui->browseButton->setEnabled(false);
         ui->myPortLabel->setText(ui->portLine->text());
         ui->connectButton->setText(disconnectString);
         changeStatus();
     } else {
-        //toda la pesca que envía al desconectar
+
+        letsDisconnect();
 
         timer_->stop();
         timeConnected_ = 0;
         ui->modeComboBox->setEnabled(true);
+        ui->browseButton->setEnabled(true);
         ui->connectButton->setText(connectString);
         changeStatus();
     }
+}
+
+void BackupWindow::on_browseButton_clicked()
+{
+    QString dirname = QFileDialog::getExistingDirectory(
+        this,
+        tr("Select a Directory"),
+        QDir::currentPath());
+
+    ui->directoryLine->setText(dirname);
+
+}
+
+void BackupWindow::tryToConnect()
+{
+    switch(whatAmI())
+    {
+        case '1': connectToServer();
+        case '2': connectToServer();
+        case '3': connectToWorld();
+    }
+}
+
+void BackupWindow::letsDisconnect()
+{
+    if(whatAmI() == 3){
+        tcpServer_->close();
+        qDebug() << "Voy a enviar un mensaje a todos mis clientes actualmente conectados para que terminen, pero solo soy un qDebug :|";
+    } else {
+        tcpSocket_->abort();
+        qDebug() << "He abortado";
+    }
+}
+
+
+
+void BackupWindow::connectToServer()
+{
+
+    const QString port = ui->portLine->text();
+    const QString ip = ui->ipLine->text();
+    ui->portLine->setEnabled(false);
+    ui->ipLine->setEnabled(false);
+    int portNumber = port.toInt();
+
+    tcpSocket_->connectToHost(ip,portNumber);
+
+}
+
+void BackupWindow::connectToWorld()
+{
+
+    const QString port = ui->portLine->text();
+    ui->portLine->setEnabled(false);
+    int portNumber = port.toInt();
+
+    tcpServer_->listen(QHostAddress::Any,portNumber);
+
+}
+
+void BackupWindow::welcome()
+{
+    qDebug() << "Más adelante te enviaré un mensaje para que hablemos, de momento solo un qDebug ^^";
+}
+
+void BackupWindow::readyRec()
+{
+    qDebug() << "He recibido datos y quiero interpretar el mensaje pero solo soy un qDebug :(((";
 }
