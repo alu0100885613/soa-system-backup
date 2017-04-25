@@ -9,6 +9,7 @@
 #include <QFileDialog>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include "protocolbuffer.pb.h"
 
 namespace Ui {
 class BackupWindow;
@@ -49,6 +50,12 @@ private slots:
 
     void readyRec();
 
+    void addClient();
+
+signals:
+
+
+
 private:
     Ui::BackupWindow *ui;
     int status_;
@@ -57,6 +64,7 @@ private:
     int IamID_;
     QTcpServer* tcpServer_;
     QTcpSocket* tcpSocket_;
+    QList<QByteArray>* ClientList_;
 
 };
 

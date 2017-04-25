@@ -5,6 +5,10 @@
 #-------------------------------------------------
 
 QT       += core gui network
+PROTOS = protocolbuffer.proto
+include(protobuf.pri)
+LIBS += -L/usr/local/lib -lprotobuf
+INCLUDEPATH += /usr/local/include
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -26,6 +30,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += main.cpp\
         backupwindow.cpp
 
-HEADERS  += backupwindow.h
+HEADERS  += backupwindow.h \
+    protocolbuffer.proto
 
 FORMS    += backupwindow.ui
+
+STATECHARTS +=

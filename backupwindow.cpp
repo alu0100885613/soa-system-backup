@@ -9,13 +9,15 @@ BackupWindow::BackupWindow(QWidget *parent) :
     timeConnected_(0),
     IamID_(0),
     tcpServer_(new QTcpServer(this)),
-    tcpSocket_(new QTcpSocket(this))
+    tcpSocket_(new QTcpSocket(this)),
+    ClientList_(new QList<QByteArray>)
 {
     ui->setupUi(this);
 
     connect(timer_, SIGNAL(timeout()), this, SLOT(showTime()));
     connect(tcpServer_,SIGNAL(newConnection()),this,SLOT(welcome()));
     connect(tcpSocket_,SIGNAL(readyRead()),this,SLOT(readyRec()));
+
 
     initializeElementsGUI();
 
@@ -50,8 +52,10 @@ void BackupWindow::initializeElementsGUI()
     for(int nIter=0; nIter<list.count(); nIter++)
     {
         if(!list[nIter].isLoopback())
-            if (list[nIter].protocol() == QAbstractSocket::IPv4Protocol )
+            if (list[nIter].protocol() == QAbstractSocket::IPv4Protocol ){
                 ui->myIpLabel->setText(list[nIter].toString());
+                nIter = list.count();
+            }
 
     }
 }
@@ -134,7 +138,6 @@ void BackupWindow::on_connectButton_clicked()
 
         timer_->start(1000);
         ui->modeComboBox->setEnabled(false);
-        ui->browseButton->setEnabled(false);
         ui->myPortLabel->setText(ui->portLine->text());
         ui->connectButton->setText(disconnectString);
         changeStatus();
@@ -146,6 +149,7 @@ void BackupWindow::on_connectButton_clicked()
         timeConnected_ = 0;
         ui->modeComboBox->setEnabled(true);
         ui->browseButton->setEnabled(true);
+        ui->portLine->setEnabled(true);
         ui->connectButton->setText(connectString);
         changeStatus();
     }
@@ -166,9 +170,9 @@ void BackupWindow::tryToConnect()
 {
     switch(whatAmI())
     {
-        case '1': connectToServer();
-        case '2': connectToServer();
-        case '3': connectToWorld();
+        case 1: connectToServer();break;
+        case 2: connectToServer();break;
+        case 3: connectToWorld();break;
     }
 }
 
@@ -196,6 +200,7 @@ void BackupWindow::connectToServer()
 
     tcpSocket_->connectToHost(ip,portNumber);
 
+
 }
 
 void BackupWindow::connectToWorld()
@@ -211,10 +216,42 @@ void BackupWindow::connectToWorld()
 
 void BackupWindow::welcome()
 {
-    qDebug() << "Más adelante te enviaré un mensaje para que hablemos, de momento solo un qDebug ^^";
+    BackupMsg helloMsg;
+
+    helloMsg.set_type_(0);
+
+    std::string output;
+    helloMsg.SerializeToString(&output);
+    QByteArray byteArray(helloMsg.SerializeAsString().c_str(),helloMsg.ByteSize());
+    qDebug() << byteArray;
+
+    while(tcpServer_->hasPendingConnections())
+    {
+        QTcpSocket* ccSocket = new QTcpSocket(this);
+        ccSocket = tcpServer_->nextPendingConnection();
+        ccSocket->write(byteArray);
+        connect(ccSocket,&QTcpSocket::readyRead,this,[=]{
+            QByteArray dataIn = ccSocket->readAll();
+            qDebug() << dataIn;
+            addClient();
+        });
+    }
+
+
 }
 
 void BackupWindow::readyRec()
 {
-    qDebug() << "He recibido datos y quiero interpretar el mensaje pero solo soy un qDebug :(((";
+    QByteArray dataIn = tcpSocket_->readAll();
+    BackupMsg a;
+    a.ParseFromArray(dataIn.data(),dataIn.size());
+    qDebug() << a.type_();
+
+    QByteArray dataOut  = "001|10.0.0.0|20.0.0.0|20|323294924dfdfdf|";
+    tcpSocket_->write(dataOut);
+}
+
+void BackupWindow::addClient(){
+
+
 }

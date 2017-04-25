@@ -1,0 +1,8 @@
+// sensorsreport.proto - Protocolo de comunicaciones con Arduino
+//
+syntax = "proto2";
+
+message BackupMsg{
+    required int32 type_ = 1;
+    optional string origin_ = 2;
+};
