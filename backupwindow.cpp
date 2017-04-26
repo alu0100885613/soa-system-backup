@@ -10,7 +10,7 @@ BackupWindow::BackupWindow(QWidget *parent) :
     IamID_(0),
     tcpServer_(new QTcpServer(this)),
     tcpSocket_(new QTcpSocket(this)),
-    ClientList_(new QList<QByteArray>)
+    ClientList_()
 {
     ui->setupUi(this);
 
@@ -220,10 +220,7 @@ void BackupWindow::welcome()
 
     helloMsg.set_type_(0);
 
-    std::string output;
-    helloMsg.SerializeToString(&output);
     QByteArray byteArray(helloMsg.SerializeAsString().c_str(),helloMsg.ByteSize());
-    qDebug() << byteArray;
 
     while(tcpServer_->hasPendingConnections())
     {
@@ -232,8 +229,9 @@ void BackupWindow::welcome()
         ccSocket->write(byteArray);
         connect(ccSocket,&QTcpSocket::readyRead,this,[=]{
             QByteArray dataIn = ccSocket->readAll();
-            qDebug() << dataIn;
-            addClient();
+            BackupMsg pack;
+            pack.ParseFromArray(dataIn.data(),dataIn.size());
+            analyzePack(pack);
         });
     }
 
@@ -243,15 +241,52 @@ void BackupWindow::welcome()
 void BackupWindow::readyRec()
 {
     QByteArray dataIn = tcpSocket_->readAll();
-    BackupMsg a;
-    a.ParseFromArray(dataIn.data(),dataIn.size());
-    qDebug() << a.type_();
+    BackupMsg pack;
+    pack.ParseFromArray(dataIn.data(),dataIn.size());
 
-    QByteArray dataOut  = "001|10.0.0.0|20.0.0.0|20|323294924dfdfdf|";
-    tcpSocket_->write(dataOut);
+    analyzePack(pack);
 }
 
-void BackupWindow::addClient(){
+void BackupWindow::addClient(std::string c)
+{
+    QString toInsert = QString::fromStdString(c);
+
+    if(!know_host(toInsert))
+        ClientList_.push_back(toInsert);
+
+    qDebug() << ClientList_;
+
+}
+
+void BackupWindow::analyzePack(BackupMsg pack)
+{
+    switch(pack.type_())
+    {
+        case 0: returnMyIp();break;
+        case 1: addClient(pack.origin_());break;
+    }
+}
 
 
+void BackupWindow::returnMyIp()
+{
+    BackupMsg myPackage;
+    QString myIp = ui->myIpLabel->text();
+
+    myPackage.set_type_(1);
+    myPackage.set_origin_(myIp.toStdString());
+
+    QByteArray byteArray(myPackage.SerializeAsString().c_str(), myPackage.ByteSize());
+    tcpSocket_->write(byteArray);
+
+}
+
+bool BackupWindow::know_host(QString host)
+{
+    for(auto entry: ClientList_){
+        if(entry == host)
+            return true;
+    }
+
+    return false;
 }

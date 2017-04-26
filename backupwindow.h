@@ -50,7 +50,13 @@ private slots:
 
     void readyRec();
 
-    void addClient();
+    void addClient(std::string c);
+
+    void analyzePack(BackupMsg pack);
+
+    void returnMyIp();
+
+    bool know_host(QString host);
 
 signals:
 
@@ -64,7 +70,7 @@ private:
     int IamID_;
     QTcpServer* tcpServer_;
     QTcpSocket* tcpSocket_;
-    QList<QByteArray>* ClientList_;
+    QStringList ClientList_;
 
 };
 
