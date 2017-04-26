@@ -143,18 +143,31 @@ class BackupMsg : public ::google::protobuf::Message /* @@protoc_insertion_point
   ::google::protobuf::int32 type_() const;
   void set_type_(::google::protobuf::int32 value);
 
+  // required int32 role_ = 3;
+  bool has_role_() const;
+  void clear_role_();
+  static const int kRoleFieldNumber = 3;
+  ::google::protobuf::int32 role_() const;
+  void set_role_(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:BackupMsg)
  private:
   void set_has_type_();
   void clear_has_type_();
   void set_has_origin_();
   void clear_has_origin_();
+  void set_has_role_();
+  void clear_has_role_();
+
+  // helper for ByteSizeLong()
+  size_t RequiredFieldsByteSizeFallback() const;
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::HasBits<1> _has_bits_;
   mutable int _cached_size_;
   ::google::protobuf::internal::ArenaStringPtr origin__;
   ::google::protobuf::int32 type__;
+  ::google::protobuf::int32 role__;
   friend struct  protobuf_protocolbuffer_2eproto::TableStruct;
 };
 // ===================================================================
@@ -249,6 +262,30 @@ inline void BackupMsg::set_allocated_origin_(::std::string* origin_) {
   }
   origin__.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), origin_);
   // @@protoc_insertion_point(field_set_allocated:BackupMsg.origin_)
+}
+
+// required int32 role_ = 3;
+inline bool BackupMsg::has_role_() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+inline void BackupMsg::set_has_role_() {
+  _has_bits_[0] |= 0x00000004u;
+}
+inline void BackupMsg::clear_has_role_() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+inline void BackupMsg::clear_role_() {
+  role__ = 0;
+  clear_has_role_();
+}
+inline ::google::protobuf::int32 BackupMsg::role_() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.role_)
+  return role__;
+}
+inline void BackupMsg::set_role_(::google::protobuf::int32 value) {
+  set_has_role_();
+  role__ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.role_)
 }
 
 #endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS

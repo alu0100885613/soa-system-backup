@@ -5,4 +5,5 @@ syntax = "proto2";
 message BackupMsg{
     required int32 type_ = 1;
     optional string origin_ = 2;
+    required int32 role_ = 3;
 };

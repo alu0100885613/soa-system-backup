@@ -50,7 +50,7 @@ private slots:
 
     void readyRec();
 
-    void addClient(std::string c);
+    void addClient(std::string c, int r);
 
     void analyzePack(BackupMsg pack);
 
@@ -70,6 +70,8 @@ private:
     int IamID_;
     QTcpServer* tcpServer_;
     QTcpSocket* tcpSocket_;
+    QStringList PassiveClientList_;
+    QStringList ActiveClientList_;
     QStringList ClientList_;
 
 };

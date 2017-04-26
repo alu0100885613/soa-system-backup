@@ -35,12 +35,14 @@ const ::google::protobuf::uint32 TableStruct::offsets[] = {
   ~0u,  // no _oneof_case_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, type__),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, origin__),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, role__),
   1,
   0,
+  2,
 };
 
 static const ::google::protobuf::internal::MigrationSchema schemas[] = {
-  { 0, 6, sizeof(BackupMsg)},
+  { 0, 7, sizeof(BackupMsg)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -89,11 +91,12 @@ void InitDefaults() {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] = {
-      "\n\024protocolbuffer.proto\"+\n\tBackupMsg\022\r\n\005t"
-      "ype_\030\001 \002(\005\022\017\n\007origin_\030\002 \001(\t"
+      "\n\024protocolbuffer.proto\":\n\tBackupMsg\022\r\n\005t"
+      "ype_\030\001 \002(\005\022\017\n\007origin_\030\002 \001(\t\022\r\n\005role_\030\003 \002"
+      "(\005"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 67);
+      descriptor, 82);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "protocolbuffer.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&TableStruct::Shutdown);
@@ -118,6 +121,7 @@ struct StaticDescriptorInitializer {
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int BackupMsg::kTypeFieldNumber;
 const int BackupMsg::kOriginFieldNumber;
+const int BackupMsg::kRoleFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 BackupMsg::BackupMsg()
@@ -138,14 +142,17 @@ BackupMsg::BackupMsg(const BackupMsg& from)
   if (from.has_origin_()) {
     origin__.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.origin__);
   }
-  type__ = from.type__;
+  ::memcpy(&type__, &from.type__,
+    reinterpret_cast<char*>(&role__) -
+    reinterpret_cast<char*>(&type__) + sizeof(role__));
   // @@protoc_insertion_point(copy_constructor:BackupMsg)
 }
 
 void BackupMsg::SharedCtor() {
   _cached_size_ = 0;
   origin__.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  type__ = 0;
+  ::memset(&type__, 0, reinterpret_cast<char*>(&role__) -
+    reinterpret_cast<char*>(&type__) + sizeof(role__));
 }
 
 BackupMsg::~BackupMsg() {
@@ -186,7 +193,10 @@ void BackupMsg::Clear() {
     GOOGLE_DCHECK(!origin__.IsDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited()));
     (*origin__.UnsafeRawStringPointer())->clear();
   }
-  type__ = 0;
+  if (_has_bits_[0 / 32] & 6u) {
+    ::memset(&type__, 0, reinterpret_cast<char*>(&role__) -
+      reinterpret_cast<char*>(&type__) + sizeof(role__));
+  }
   _has_bits_.Clear();
   _internal_metadata_.Clear();
 }
@@ -223,6 +233,19 @@ bool BackupMsg::MergePartialFromCodedStream(
             this->origin_().data(), this->origin_().length(),
             ::google::protobuf::internal::WireFormat::PARSE,
             "BackupMsg.origin_");
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // required int32 role_ = 3;
+      case 3: {
+        if (tag == 24u) {
+          set_has_role_();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &role__)));
         } else {
           goto handle_unusual;
         }
@@ -269,6 +292,11 @@ void BackupMsg::SerializeWithCachedSizes(
       2, this->origin_(), output);
   }
 
+  // required int32 role_ = 3;
+  if (has_role_()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->role_(), output);
+  }
+
   if (_internal_metadata_.have_unknown_fields()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -296,6 +324,11 @@ void BackupMsg::SerializeWithCachedSizes(
         2, this->origin_(), target);
   }
 
+  // required int32 role_ = 3;
+  if (has_role_()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->role_(), target);
+  }
+
   if (_internal_metadata_.have_unknown_fields()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -304,6 +337,26 @@ void BackupMsg::SerializeWithCachedSizes(
   return target;
 }
 
+size_t BackupMsg::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:BackupMsg)
+  size_t total_size = 0;
+
+  if (has_type_()) {
+    // required int32 type_ = 1;
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->type_());
+  }
+
+  if (has_role_()) {
+    // required int32 role_ = 3;
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->role_());
+  }
+
+  return total_size;
+}
 size_t BackupMsg::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:BackupMsg)
   size_t total_size = 0;
@@ -313,11 +366,19 @@ size_t BackupMsg::ByteSizeLong() const {
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         unknown_fields());
   }
-  // required int32 type_ = 1;
-  if (has_type_()) {
+  if (((_has_bits_[0] & 0x00000006) ^ 0x00000006) == 0) {  // All required fields are present.
+    // required int32 type_ = 1;
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::Int32Size(
         this->type_());
+
+    // required int32 role_ = 3;
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->role_());
+
+  } else {
+    total_size += RequiredFieldsByteSizeFallback();
   }
   // optional string origin_ = 2;
   if (has_origin_()) {
@@ -352,13 +413,16 @@ void BackupMsg::MergeFrom(const BackupMsg& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:BackupMsg)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom(from._internal_metadata_);
-  if (from._has_bits_[0 / 32] & 3u) {
+  if (from._has_bits_[0 / 32] & 7u) {
     if (from.has_origin_()) {
       set_has_origin_();
       origin__.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.origin__);
     }
     if (from.has_type_()) {
       set_type_(from.type_());
+    }
+    if (from.has_role_()) {
+      set_role_(from.role_());
     }
   }
 }
@@ -378,7 +442,7 @@ void BackupMsg::CopyFrom(const BackupMsg& from) {
 }
 
 bool BackupMsg::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000002) != 0x00000002) return false;
+  if ((_has_bits_[0] & 0x00000006) != 0x00000006) return false;
   return true;
 }
 
@@ -389,6 +453,7 @@ void BackupMsg::Swap(BackupMsg* other) {
 void BackupMsg::InternalSwap(BackupMsg* other) {
   origin__.Swap(&other->origin__);
   std::swap(type__, other->type__);
+  std::swap(role__, other->role__);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
@@ -486,6 +551,30 @@ void BackupMsg::set_allocated_origin_(::std::string* origin_) {
   }
   origin__.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), origin_);
   // @@protoc_insertion_point(field_set_allocated:BackupMsg.origin_)
+}
+
+// required int32 role_ = 3;
+bool BackupMsg::has_role_() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+void BackupMsg::set_has_role_() {
+  _has_bits_[0] |= 0x00000004u;
+}
+void BackupMsg::clear_has_role_() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+void BackupMsg::clear_role_() {
+  role__ = 0;
+  clear_has_role_();
+}
+::google::protobuf::int32 BackupMsg::role_() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.role_)
+  return role__;
+}
+void BackupMsg::set_role_(::google::protobuf::int32 value) {
+  set_has_role_();
+  role__ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.role_)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS

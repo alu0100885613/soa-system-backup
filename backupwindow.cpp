@@ -10,6 +10,8 @@ BackupWindow::BackupWindow(QWidget *parent) :
     IamID_(0),
     tcpServer_(new QTcpServer(this)),
     tcpSocket_(new QTcpSocket(this)),
+    PassiveClientList_(),
+    ActiveClientList_(),
     ClientList_()
 {
     ui->setupUi(this);
@@ -120,6 +122,9 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->portLine->setText("");
     }
 
+    if(index != 0)
+        ui->modeComboBox->setEnabled(false);
+
 }
 
 int BackupWindow::whatAmI()
@@ -219,6 +224,7 @@ void BackupWindow::welcome()
     BackupMsg helloMsg;
 
     helloMsg.set_type_(0);
+    helloMsg.set_role_(whatAmI());
 
     QByteArray byteArray(helloMsg.SerializeAsString().c_str(),helloMsg.ByteSize());
 
@@ -247,14 +253,23 @@ void BackupWindow::readyRec()
     analyzePack(pack);
 }
 
-void BackupWindow::addClient(std::string c)
+void BackupWindow::addClient(std::string c, int r)
 {
     QString toInsert = QString::fromStdString(c);
 
-    if(!know_host(toInsert))
+    if(!know_host(toInsert)){
         ClientList_.push_back(toInsert);
 
-    qDebug() << ClientList_;
+        if(r == 2)
+            PassiveClientList_.push_back(toInsert);
+
+        if(r == 1)
+            ActiveClientList_.push_back(toInsert);
+    }
+
+    qDebug() << "Total: " << ClientList_;
+    qDebug() << "Pasivos :" << PassiveClientList_;
+    qDebug() << "Activos :" << ActiveClientList_;
 
 }
 
@@ -263,7 +278,8 @@ void BackupWindow::analyzePack(BackupMsg pack)
     switch(pack.type_())
     {
         case 0: returnMyIp();break;
-        case 1: addClient(pack.origin_());break;
+        case 1: addClient(pack.origin_(),pack.role_());break;
+        //case 2:
     }
 }
 
@@ -275,6 +291,7 @@ void BackupWindow::returnMyIp()
 
     myPackage.set_type_(1);
     myPackage.set_origin_(myIp.toStdString());
+    myPackage.set_role_(whatAmI());
 
     QByteArray byteArray(myPackage.SerializeAsString().c_str(), myPackage.ByteSize());
     tcpSocket_->write(byteArray);
