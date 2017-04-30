@@ -7,9 +7,7 @@ BackupWindow::BackupWindow(QWidget *parent) :
     status_(0),
     timer_(new QTimer),
     timeConnected_(0),
-    IamID_(0),
-    tcpServer_(new QTcpServer(this)),
-    tcpSocket_(new QTcpSocket(this)),
+    MyMagicObject_(),
     PassiveClientList_(),
     ActiveClientList_(),
     ClientList_()
@@ -17,20 +15,15 @@ BackupWindow::BackupWindow(QWidget *parent) :
     ui->setupUi(this);
 
     connect(timer_, SIGNAL(timeout()), this, SLOT(showTime()));
-    connect(tcpServer_,SIGNAL(newConnection()),this,SLOT(welcome()));
-    connect(tcpSocket_,SIGNAL(readyRead()),this,SLOT(readyRec()));
-
 
     initializeElementsGUI();
-
 }
 
 BackupWindow::~BackupWindow()
 {
     delete ui;
     delete timer_;
-    delete tcpServer_;
-    delete tcpSocket_;
+    delete MyMagicObject_;
 }
 
 void BackupWindow::changeStatus()
@@ -83,12 +76,13 @@ void BackupWindow::showTime()
 
 void BackupWindow::on_modeComboBox_activated(int index)
 {
-    IamID_ = index;
 
     if(index == 0)
         initializeElementsGUI();
 
     if(index == 1){
+        MyMagicObject_ = new BackupUser(index);
+
         ui->browseButton->setEnabled(true);
         ui->connectButton->setEnabled(true);
         ui->sendButton->setEnabled(true);
@@ -98,8 +92,12 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->directoryLine->setText("");
         ui->ipLine->setText("");
         ui->portLine->setText("");
+
+        connect(MyMagicObject_->getTheSocket(),SIGNAL(readyRead()),this,SLOT(readyRec()));
     }
     if(index == 2){
+        MyMagicObject_ = new BackupUser(index);
+
         ui->connectButton->setEnabled(true);
         ui->browseButton->setEnabled(true);
         ui->sendButton->setEnabled(false);
@@ -109,8 +107,12 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->directoryLine->setText("");
         ui->ipLine->setText("");
         ui->portLine->setText("");
+
+        connect(MyMagicObject_->getTheSocket(),SIGNAL(readyRead()),this,SLOT(readyRec()));
     }
     if(index == 3){
+        MyMagicObject_ = new BackupServer(index);
+
         ui->connectButton->setEnabled(true);
         ui->browseButton->setEnabled(false);
         ui->sendButton->setEnabled(false);
@@ -120,6 +122,8 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->directoryLine->setText("");
         ui->ipLine->setText("");
         ui->portLine->setText("");
+
+        connect(MyMagicObject_->getTheServer(),SIGNAL(newConnection()),this,SLOT(welcome()));
     }
 
     if(index != 0)
@@ -129,7 +133,7 @@ void BackupWindow::on_modeComboBox_activated(int index)
 
 int BackupWindow::whatAmI()
 {
-    return IamID_;
+    return MyMagicObject_->getWhatAmI();
 }
 
 void BackupWindow::on_connectButton_clicked()
@@ -146,6 +150,7 @@ void BackupWindow::on_connectButton_clicked()
         ui->myPortLabel->setText(ui->portLine->text());
         ui->connectButton->setText(disconnectString);
         changeStatus();
+
     } else {
 
         letsDisconnect();
@@ -184,10 +189,10 @@ void BackupWindow::tryToConnect()
 void BackupWindow::letsDisconnect()
 {
     if(whatAmI() == 3){
-        tcpServer_->close();
+        MyMagicObject_->getTheServer()->close();
         qDebug() << "Voy a enviar un mensaje a todos mis clientes actualmente conectados para que terminen, pero solo soy un qDebug :|";
     } else {
-        tcpSocket_->abort();
+        MyMagicObject_->getTheSocket()->abort();
         qDebug() << "He abortado";
     }
 }
@@ -203,7 +208,7 @@ void BackupWindow::connectToServer()
     ui->ipLine->setEnabled(false);
     int portNumber = port.toInt();
 
-    tcpSocket_->connectToHost(ip,portNumber);
+    MyMagicObject_->getTheSocket()->connectToHost(ip,portNumber);
 
 
 }
@@ -215,7 +220,7 @@ void BackupWindow::connectToWorld()
     ui->portLine->setEnabled(false);
     int portNumber = port.toInt();
 
-    tcpServer_->listen(QHostAddress::Any,portNumber);
+    MyMagicObject_->getTheServer()->listen(QHostAddress::Any,portNumber);
 
 }
 
@@ -228,10 +233,10 @@ void BackupWindow::welcome()
 
     QByteArray byteArray(helloMsg.SerializeAsString().c_str(),helloMsg.ByteSize());
 
-    while(tcpServer_->hasPendingConnections())
+    while(MyMagicObject_->getTheServer()->hasPendingConnections())
     {
         QTcpSocket* ccSocket = new QTcpSocket(this);
-        ccSocket = tcpServer_->nextPendingConnection();
+        ccSocket = MyMagicObject_->getTheServer()->nextPendingConnection();
         ccSocket->write(byteArray);
         connect(ccSocket,&QTcpSocket::readyRead,this,[=]{
             QByteArray dataIn = ccSocket->readAll();
@@ -246,7 +251,7 @@ void BackupWindow::welcome()
 
 void BackupWindow::readyRec()
 {
-    QByteArray dataIn = tcpSocket_->readAll();
+    QByteArray dataIn = MyMagicObject_->getTheSocket()->readAll();
     BackupMsg pack;
     pack.ParseFromArray(dataIn.data(),dataIn.size());
 
@@ -266,6 +271,8 @@ void BackupWindow::addClient(std::string c, int r)
         if(r == 1)
             ActiveClientList_.push_back(toInsert);
     }
+
+
 
     qDebug() << "Total: " << ClientList_;
     qDebug() << "Pasivos :" << PassiveClientList_;
@@ -294,7 +301,7 @@ void BackupWindow::returnMyIp()
     myPackage.set_role_(whatAmI());
 
     QByteArray byteArray(myPackage.SerializeAsString().c_str(), myPackage.ByteSize());
-    tcpSocket_->write(byteArray);
+    MyMagicObject_->getTheSocket()->write(byteArray);
 
 }
 

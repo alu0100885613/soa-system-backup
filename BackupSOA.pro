@@ -31,7 +31,10 @@ SOURCES += main.cpp\
         backupwindow.cpp
 
 HEADERS  += backupwindow.h \
-    protocolbuffer.proto
+    protocolbuffer.proto \
+    magicobject.h \
+    backupserver.h \
+    backupuser.h
 
 FORMS    += backupwindow.ui
 

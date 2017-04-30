@@ -10,6 +10,8 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include "protocolbuffer.pb.h"
+#include "backupserver.h"
+#include "backupuser.h"
 
 namespace Ui {
 class BackupWindow;
@@ -67,9 +69,7 @@ private:
     int status_;
     QTimer* timer_;
     long timeConnected_;
-    int IamID_;
-    QTcpServer* tcpServer_;
-    QTcpSocket* tcpSocket_;
+    MagicObject* MyMagicObject_;
     QStringList PassiveClientList_;
     QStringList ActiveClientList_;
     QStringList ClientList_;
