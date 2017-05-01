@@ -17,6 +17,11 @@ namespace Ui {
 class BackupWindow;
 }
 
+struct MagicNode{
+    QTcpSocket* pointer_;
+    int idMode_;
+};
+
 class BackupWindow : public QMainWindow
 {
     Q_OBJECT
@@ -73,6 +78,7 @@ private:
     QStringList PassiveClientList_;
     QStringList ActiveClientList_;
     QStringList ClientList_;
+    QVector<MagicNode> MagicList_;
 
 };
 

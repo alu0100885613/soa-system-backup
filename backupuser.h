@@ -14,6 +14,11 @@ public:
         IamID(id)
     {}
 
+    BackupUser(QTcpSocket* sck):
+        MySocket_(sck),
+        IamID(0)
+    {}
+
     ~BackupUser(){
         MySocket_->abort();
         if(MySocket_ != NULL)

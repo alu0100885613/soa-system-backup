@@ -10,7 +10,8 @@ BackupWindow::BackupWindow(QWidget *parent) :
     MyMagicObject_(),
     PassiveClientList_(),
     ActiveClientList_(),
-    ClientList_()
+    ClientList_(),
+    MagicList_()
 {
     ui->setupUi(this);
 
@@ -23,7 +24,6 @@ BackupWindow::~BackupWindow()
 {
     delete ui;
     delete timer_;
-    delete MyMagicObject_;
 }
 
 void BackupWindow::changeStatus()
@@ -235,11 +235,14 @@ void BackupWindow::welcome()
 
     while(MyMagicObject_->getTheServer()->hasPendingConnections())
     {
-        QTcpSocket* ccSocket = new QTcpSocket(this);
-        ccSocket = MyMagicObject_->getTheServer()->nextPendingConnection();
-        ccSocket->write(byteArray);
-        connect(ccSocket,&QTcpSocket::readyRead,this,[=]{
-            QByteArray dataIn = ccSocket->readAll();
+        BackupUser* ccVirtualUser = new BackupUser(MyMagicObject_->getTheServer()->nextPendingConnection());
+        ccVirtualUser->getTheSocket()->write(byteArray);
+        MagicNode node;
+        node.pointer_ = ccVirtualUser->getTheSocket();
+        node.idMode_ = 1;
+        MagicList_.push_back(node);
+        connect(ccVirtualUser->getTheSocket(),&QTcpSocket::readyRead,this,[=]{
+            QByteArray dataIn = ccVirtualUser->getTheSocket()->readAll();
             BackupMsg pack;
             pack.ParseFromArray(dataIn.data(),dataIn.size());
             analyzePack(pack);
@@ -256,6 +259,7 @@ void BackupWindow::readyRec()
     pack.ParseFromArray(dataIn.data(),dataIn.size());
 
     analyzePack(pack);
+
 }
 
 void BackupWindow::addClient(std::string c, int r)
@@ -271,7 +275,6 @@ void BackupWindow::addClient(std::string c, int r)
         if(r == 1)
             ActiveClientList_.push_back(toInsert);
     }
-
 
 
     qDebug() << "Total: " << ClientList_;
