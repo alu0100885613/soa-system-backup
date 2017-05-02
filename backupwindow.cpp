@@ -195,6 +195,8 @@ void BackupWindow::letsDisconnect()
 
         QByteArray byteArray(byeMsg.SerializeAsString().c_str(), byeMsg.ByteSize());
         multicast(byteArray);
+        eraseAllSockets();
+        on_comboUsers_activated(0);
         MyMagicObject_->getTheServer()->close();
     } else {
         BackupMsg byeMsg;
@@ -207,8 +209,6 @@ void BackupWindow::letsDisconnect()
         MyMagicObject_->getTheSocket()->close();
     }
 }
-
-
 
 void BackupWindow::connectToServer()
 {
@@ -307,7 +307,6 @@ void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
     }
 }
 
-
 void BackupWindow::returnMyIp()
 {
     BackupMsg myPackage;
@@ -367,5 +366,51 @@ void BackupWindow::multicast(QByteArray bytearray)
 {
     for(int i = 0; i < MagicList_.size() ; i++){
         MagicList_[i].pointer_->write(bytearray);
+    }
+}
+
+void BackupWindow::on_comboUsers_activated(int index)
+{
+    if(index == 0){
+        ui->nusers->setText(QString::number(MagicList_.size()));
+    }
+
+    if(index == 1){
+        ui->nusers->setText(QString::number(getPassives()));
+    }
+
+    if(index == 2){
+        ui->nusers->setText(QString::number(getActives()));
+    }
+}
+
+int BackupWindow::getPassives()
+{
+    int count = 0;
+
+    for(auto entry: MagicList_){
+        if(entry.idMode_ == 2)
+            count++;
+    }
+
+    return count;
+}
+
+int BackupWindow::getActives()
+{
+    int count = 0;
+
+    for(auto entry: MagicList_){
+        if(entry.idMode_ == 1)
+            count++;
+    }
+
+    return count;
+}
+
+void BackupWindow::eraseAllSockets()
+{
+    for(int i = 0; i < MagicList_.size() ; i++){
+        MagicList_.removeAt(i);
     }
 }

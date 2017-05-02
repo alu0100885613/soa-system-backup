@@ -71,6 +71,14 @@ private slots:
 
     void multicast(QByteArray bytearray);
 
+    void on_comboUsers_activated(int index);
+
+    int getPassives();
+
+    int getActives();
+
+    void eraseAllSockets();
+
 signals:
 
 
@@ -85,6 +93,7 @@ private:
     QStringList ActiveClientList_;
     QStringList ClientList_;
     QVector<MagicNode> MagicList_;
+
 
 };
 

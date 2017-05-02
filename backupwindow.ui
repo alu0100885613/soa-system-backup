@@ -36,7 +36,29 @@
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignHCenter">
+      <item alignment="Qt::AlignRight">
+       <widget class="QComboBox" name="comboUsers">
+        <property name="frame">
+         <bool>true</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>Total users:</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Passive users:</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Active users:</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="nusers">
         <property name="text">
          <string>-</string>
@@ -114,13 +136,25 @@
        <layout class="QVBoxLayout" name="verticalLayout">
         <item alignment="Qt::AlignHCenter">
          <widget class="QLineEdit" name="ipLine">
+          <property name="inputMethodHints">
+           <set>Qt::ImhNone</set>
+          </property>
           <property name="text">
-           <string/>
+           <string extracomment="Ip"/>
+          </property>
+          <property name="clearButtonEnabled">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLineEdit" name="portLine">
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="inputMask">
+           <string/>
+          </property>
           <property name="text">
            <string/>
           </property>

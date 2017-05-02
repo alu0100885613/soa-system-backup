@@ -1,5 +1,3 @@
-// sensorsreport.proto - Protocolo de comunicaciones con Arduino
-//
 syntax = "proto2";
 
 message BackupMsg{
