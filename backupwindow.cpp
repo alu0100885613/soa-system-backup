@@ -96,8 +96,8 @@ void BackupWindow::on_modeComboBox_activated(int index)
         MyMagicObject_ = new BackupUser(index);
 
         ui->browseButton->setEnabled(true);
-        ui->connectButton->setEnabled(true);
-        ui->sendButton->setEnabled(true);
+        ui->connectButton->setEnabled(false);
+        ui->sendButton->setEnabled(false);
         ui->directoryLine->setEnabled(false);
         ui->ipLine->setEnabled(true);
         ui->portLine->setEnabled(true);
@@ -112,7 +112,7 @@ void BackupWindow::on_modeComboBox_activated(int index)
     if(index == 2){
         MyMagicObject_ = new BackupUser(index);
 
-        ui->connectButton->setEnabled(true);
+        ui->connectButton->setEnabled(false);
         ui->browseButton->setEnabled(true);
         ui->sendButton->setEnabled(false);
         ui->directoryLine->setEnabled(false);
@@ -193,6 +193,8 @@ void BackupWindow::on_browseButton_clicked()
         QDir::currentPath());
 
     ui->directoryLine->setText(dirname);
+    if(dirname != "")
+        ui->connectButton->setEnabled(true);
 
 }
 
@@ -461,13 +463,16 @@ void BackupWindow::eraseAllSockets()
 
 void BackupWindow::morePeople(int act, int pas)
 {
-    if(whatAmI() == 1)
+    if(whatAmI() == 1){
         ui->nusers->setText(QString::number(pas));
+        if(pas >= 3)
+            ui->sendButton->setEnabled(true);
+        else
+            ui->sendButton->setEnabled(false);
+    }
 
     if(whatAmI() == 2)
         ui->nusers->setText(QString::number(act));
-
-
 }
 
 void BackupWindow::imAlive(QTcpSocket *sck)
