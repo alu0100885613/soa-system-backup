@@ -57,13 +57,19 @@ private slots:
 
     void readyRec();
 
-    void addClient(std::string c, int r);
+    void addClient(std::string c, int r,QTcpSocket* sck);
 
-    void analyzePack(BackupMsg pack);
+    void analyzePack(BackupMsg pack,QTcpSocket* sck);
 
     void returnMyIp();
 
     bool know_host(QString host);
+
+    void keepAlive();
+
+    void wannaDisconnect(QTcpSocket* sck);
+
+    void multicast(QByteArray bytearray);
 
 signals:
 

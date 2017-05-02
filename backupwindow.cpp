@@ -18,6 +18,7 @@ BackupWindow::BackupWindow(QWidget *parent) :
     connect(timer_, SIGNAL(timeout()), this, SLOT(showTime()));
 
     initializeElementsGUI();
+    keepAlive();
 }
 
 BackupWindow::~BackupWindow()
@@ -157,7 +158,6 @@ void BackupWindow::on_connectButton_clicked()
 
         timer_->stop();
         timeConnected_ = 0;
-        ui->modeComboBox->setEnabled(true);
         ui->browseButton->setEnabled(true);
         ui->portLine->setEnabled(true);
         ui->connectButton->setText(connectString);
@@ -189,11 +189,22 @@ void BackupWindow::tryToConnect()
 void BackupWindow::letsDisconnect()
 {
     if(whatAmI() == 3){
+        BackupMsg byeMsg;
+        byeMsg.set_type_(2);
+        byeMsg.set_role_(whatAmI());
+
+        QByteArray byteArray(byeMsg.SerializeAsString().c_str(), byeMsg.ByteSize());
+        multicast(byteArray);
         MyMagicObject_->getTheServer()->close();
-        qDebug() << "Voy a enviar un mensaje a todos mis clientes actualmente conectados para que terminen, pero solo soy un qDebug :|";
     } else {
-        MyMagicObject_->getTheSocket()->abort();
-        qDebug() << "He abortado";
+        BackupMsg byeMsg;
+        byeMsg.set_type_(2);
+        byeMsg.set_origin_(ui->myIpLabel->text().toStdString());
+        byeMsg.set_role_(whatAmI());
+
+        QByteArray byteArray(byeMsg.SerializeAsString().c_str(), byeMsg.ByteSize());
+        MyMagicObject_->getTheSocket()->write(byteArray);
+        MyMagicObject_->getTheSocket()->close();
     }
 }
 
@@ -237,15 +248,11 @@ void BackupWindow::welcome()
     {
         BackupUser* ccVirtualUser = new BackupUser(MyMagicObject_->getTheServer()->nextPendingConnection());
         ccVirtualUser->getTheSocket()->write(byteArray);
-        MagicNode node;
-        node.pointer_ = ccVirtualUser->getTheSocket();
-        node.idMode_ = 1;
-        MagicList_.push_back(node);
         connect(ccVirtualUser->getTheSocket(),&QTcpSocket::readyRead,this,[=]{
             QByteArray dataIn = ccVirtualUser->getTheSocket()->readAll();
             BackupMsg pack;
             pack.ParseFromArray(dataIn.data(),dataIn.size());
-            analyzePack(pack);
+            analyzePack(pack,ccVirtualUser->getTheSocket());
         });
     }
 
@@ -258,13 +265,20 @@ void BackupWindow::readyRec()
     BackupMsg pack;
     pack.ParseFromArray(dataIn.data(),dataIn.size());
 
-    analyzePack(pack);
+    analyzePack(pack,MyMagicObject_->getTheSocket());
 
 }
 
-void BackupWindow::addClient(std::string c, int r)
+void BackupWindow::addClient(std::string c, int r, QTcpSocket* sck)
 {
     QString toInsert = QString::fromStdString(c);
+
+    MagicNode node;
+    node.pointer_ = sck;
+    node.idMode_ = r;
+    MagicList_.push_back(node);
+    ui->nusers->setText(QString::number(MagicList_.size()));
+
 
     if(!know_host(toInsert)){
         ClientList_.push_back(toInsert);
@@ -276,20 +290,20 @@ void BackupWindow::addClient(std::string c, int r)
             ActiveClientList_.push_back(toInsert);
     }
 
-
+    qDebug() << MagicList_.size();
     qDebug() << "Total: " << ClientList_;
     qDebug() << "Pasivos :" << PassiveClientList_;
     qDebug() << "Activos :" << ActiveClientList_;
 
 }
 
-void BackupWindow::analyzePack(BackupMsg pack)
+void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
 {
     switch(pack.type_())
     {
         case 0: returnMyIp();break;
-        case 1: addClient(pack.origin_(),pack.role_());break;
-        //case 2:
+        case 1: addClient(pack.origin_(),pack.role_(),sck);break;
+        case 2: wannaDisconnect(sck);
     }
 }
 
@@ -316,4 +330,42 @@ bool BackupWindow::know_host(QString host)
     }
 
     return false;
+}
+
+void BackupWindow::keepAlive()
+{
+
+}
+
+void BackupWindow::wannaDisconnect(QTcpSocket* sck)
+{
+    if(whatAmI() == 3){
+        for(int i = 0; i < MagicList_.size() ; i++){
+            if(MagicList_[i].pointer_ == sck){
+                MagicList_[i].pointer_->close();
+                MagicList_.removeAt(i);
+                ui->nusers->setText(QString::number(MagicList_.size()));
+            }
+        }
+    }
+    else{
+       sck->close();
+
+       const QString connectString = "Connect";
+
+       timer_->stop();
+       timeConnected_ = 0;
+       ui->browseButton->setEnabled(true);
+       ui->portLine->setEnabled(true);
+       ui->connectButton->setText(connectString);
+       changeStatus();
+    }
+
+}
+
+void BackupWindow::multicast(QByteArray bytearray)
+{
+    for(int i = 0; i < MagicList_.size() ; i++){
+        MagicList_[i].pointer_->write(bytearray);
+    }
 }
