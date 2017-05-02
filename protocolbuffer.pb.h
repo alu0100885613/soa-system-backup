@@ -150,6 +150,20 @@ class BackupMsg : public ::google::protobuf::Message /* @@protoc_insertion_point
   ::google::protobuf::int32 role_() const;
   void set_role_(::google::protobuf::int32 value);
 
+  // optional int32 nusersAct = 4;
+  bool has_nusersact() const;
+  void clear_nusersact();
+  static const int kNusersActFieldNumber = 4;
+  ::google::protobuf::int32 nusersact() const;
+  void set_nusersact(::google::protobuf::int32 value);
+
+  // optional int32 nusersPas = 5;
+  bool has_nuserspas() const;
+  void clear_nuserspas();
+  static const int kNusersPasFieldNumber = 5;
+  ::google::protobuf::int32 nuserspas() const;
+  void set_nuserspas(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:BackupMsg)
  private:
   void set_has_type_();
@@ -158,6 +172,10 @@ class BackupMsg : public ::google::protobuf::Message /* @@protoc_insertion_point
   void clear_has_origin_();
   void set_has_role_();
   void clear_has_role_();
+  void set_has_nusersact();
+  void clear_has_nusersact();
+  void set_has_nuserspas();
+  void clear_has_nuserspas();
 
   // helper for ByteSizeLong()
   size_t RequiredFieldsByteSizeFallback() const;
@@ -168,6 +186,8 @@ class BackupMsg : public ::google::protobuf::Message /* @@protoc_insertion_point
   ::google::protobuf::internal::ArenaStringPtr origin__;
   ::google::protobuf::int32 type__;
   ::google::protobuf::int32 role__;
+  ::google::protobuf::int32 nusersact_;
+  ::google::protobuf::int32 nuserspas_;
   friend struct  protobuf_protocolbuffer_2eproto::TableStruct;
 };
 // ===================================================================
@@ -286,6 +306,54 @@ inline void BackupMsg::set_role_(::google::protobuf::int32 value) {
   set_has_role_();
   role__ = value;
   // @@protoc_insertion_point(field_set:BackupMsg.role_)
+}
+
+// optional int32 nusersAct = 4;
+inline bool BackupMsg::has_nusersact() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+inline void BackupMsg::set_has_nusersact() {
+  _has_bits_[0] |= 0x00000008u;
+}
+inline void BackupMsg::clear_has_nusersact() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+inline void BackupMsg::clear_nusersact() {
+  nusersact_ = 0;
+  clear_has_nusersact();
+}
+inline ::google::protobuf::int32 BackupMsg::nusersact() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.nusersAct)
+  return nusersact_;
+}
+inline void BackupMsg::set_nusersact(::google::protobuf::int32 value) {
+  set_has_nusersact();
+  nusersact_ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.nusersAct)
+}
+
+// optional int32 nusersPas = 5;
+inline bool BackupMsg::has_nuserspas() const {
+  return (_has_bits_[0] & 0x00000010u) != 0;
+}
+inline void BackupMsg::set_has_nuserspas() {
+  _has_bits_[0] |= 0x00000010u;
+}
+inline void BackupMsg::clear_has_nuserspas() {
+  _has_bits_[0] &= ~0x00000010u;
+}
+inline void BackupMsg::clear_nuserspas() {
+  nuserspas_ = 0;
+  clear_has_nuserspas();
+}
+inline ::google::protobuf::int32 BackupMsg::nuserspas() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.nusersPas)
+  return nuserspas_;
+}
+inline void BackupMsg::set_nuserspas(::google::protobuf::int32 value) {
+  set_has_nuserspas();
+  nuserspas_ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.nusersPas)
 }
 
 #endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS

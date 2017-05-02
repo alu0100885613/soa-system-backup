@@ -25,6 +25,7 @@ BackupWindow::~BackupWindow()
 {
     delete ui;
     delete timer_;
+    delete MyMagicObject_;
 }
 
 void BackupWindow::changeStatus()
@@ -93,6 +94,8 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->directoryLine->setText("");
         ui->ipLine->setText("");
         ui->portLine->setText("");
+        ui->comboUsers->setCurrentIndex(1);
+        ui->comboUsers->setEnabled(false);
 
         connect(MyMagicObject_->getTheSocket(),SIGNAL(readyRead()),this,SLOT(readyRec()));
     }
@@ -108,6 +111,8 @@ void BackupWindow::on_modeComboBox_activated(int index)
         ui->directoryLine->setText("");
         ui->ipLine->setText("");
         ui->portLine->setText("");
+        ui->comboUsers->setCurrentIndex(2);
+        ui->comboUsers->setEnabled(false);
 
         connect(MyMagicObject_->getTheSocket(),SIGNAL(readyRead()),this,SLOT(readyRec()));
     }
@@ -278,7 +283,14 @@ void BackupWindow::addClient(std::string c, int r, QTcpSocket* sck)
     node.idMode_ = r;
     MagicList_.push_back(node);
     ui->nusers->setText(QString::number(MagicList_.size()));
+    BackupMsg infOthers;
+    infOthers.set_type_(3);
+    infOthers.set_role_(whatAmI());
+    infOthers.set_nusersact(getActives());
+    infOthers.set_nuserspas(getPassives());
 
+    QByteArray byteArray(infOthers.SerializeAsString().c_str(), infOthers.ByteSize());
+    multicast(byteArray);
 
     if(!know_host(toInsert)){
         ClientList_.push_back(toInsert);
@@ -303,7 +315,9 @@ void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
     {
         case 0: returnMyIp();break;
         case 1: addClient(pack.origin_(),pack.role_(),sck);break;
-        case 2: wannaDisconnect(sck);
+        case 2: wannaDisconnect(sck);break;
+        case 3: morePeople(pack.nusersact(),pack.nuserspas());break;
+
     }
 }
 
@@ -344,10 +358,17 @@ void BackupWindow::wannaDisconnect(QTcpSocket* sck)
                 MagicList_[i].pointer_->close();
                 MagicList_.removeAt(i);
                 ui->nusers->setText(QString::number(MagicList_.size()));
+                BackupMsg infOthers;
+                infOthers.set_type_(3);
+                infOthers.set_role_(whatAmI());        
+                infOthers.set_nusersact(getActives());
+                infOthers.set_nuserspas(getPassives());
+
+                QByteArray byteArray(infOthers.SerializeAsString().c_str(), infOthers.ByteSize());
+                multicast(byteArray);
             }
         }
-    }
-    else{
+    } else {
        sck->close();
 
        const QString connectString = "Connect";
@@ -414,3 +435,15 @@ void BackupWindow::eraseAllSockets()
         MagicList_.removeAt(i);
     }
 }
+
+void BackupWindow::morePeople(int act, int pas)
+{
+    if(whatAmI() == 1)
+        ui->nusers->setText(QString::number(pas));
+
+    if(whatAmI() == 2)
+        ui->nusers->setText(QString::number(act));
+
+
+}
+

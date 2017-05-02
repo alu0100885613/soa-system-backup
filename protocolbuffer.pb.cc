@@ -36,13 +36,17 @@ const ::google::protobuf::uint32 TableStruct::offsets[] = {
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, type__),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, origin__),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, role__),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, nusersact_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, nuserspas_),
   1,
   0,
   2,
+  3,
+  4,
 };
 
 static const ::google::protobuf::internal::MigrationSchema schemas[] = {
-  { 0, 7, sizeof(BackupMsg)},
+  { 0, 9, sizeof(BackupMsg)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -91,12 +95,12 @@ void InitDefaults() {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] = {
-      "\n\024protocolbuffer.proto\":\n\tBackupMsg\022\r\n\005t"
+      "\n\024protocolbuffer.proto\"`\n\tBackupMsg\022\r\n\005t"
       "ype_\030\001 \002(\005\022\017\n\007origin_\030\002 \001(\t\022\r\n\005role_\030\003 \002"
-      "(\005"
+      "(\005\022\021\n\tnusersAct\030\004 \001(\005\022\021\n\tnusersPas\030\005 \001(\005"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 82);
+      descriptor, 120);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "protocolbuffer.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&TableStruct::Shutdown);
@@ -122,6 +126,8 @@ struct StaticDescriptorInitializer {
 const int BackupMsg::kTypeFieldNumber;
 const int BackupMsg::kOriginFieldNumber;
 const int BackupMsg::kRoleFieldNumber;
+const int BackupMsg::kNusersActFieldNumber;
+const int BackupMsg::kNusersPasFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 BackupMsg::BackupMsg()
@@ -143,16 +149,16 @@ BackupMsg::BackupMsg(const BackupMsg& from)
     origin__.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.origin__);
   }
   ::memcpy(&type__, &from.type__,
-    reinterpret_cast<char*>(&role__) -
-    reinterpret_cast<char*>(&type__) + sizeof(role__));
+    reinterpret_cast<char*>(&nuserspas_) -
+    reinterpret_cast<char*>(&type__) + sizeof(nuserspas_));
   // @@protoc_insertion_point(copy_constructor:BackupMsg)
 }
 
 void BackupMsg::SharedCtor() {
   _cached_size_ = 0;
   origin__.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  ::memset(&type__, 0, reinterpret_cast<char*>(&role__) -
-    reinterpret_cast<char*>(&type__) + sizeof(role__));
+  ::memset(&type__, 0, reinterpret_cast<char*>(&nuserspas_) -
+    reinterpret_cast<char*>(&type__) + sizeof(nuserspas_));
 }
 
 BackupMsg::~BackupMsg() {
@@ -193,9 +199,9 @@ void BackupMsg::Clear() {
     GOOGLE_DCHECK(!origin__.IsDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited()));
     (*origin__.UnsafeRawStringPointer())->clear();
   }
-  if (_has_bits_[0 / 32] & 6u) {
-    ::memset(&type__, 0, reinterpret_cast<char*>(&role__) -
-      reinterpret_cast<char*>(&type__) + sizeof(role__));
+  if (_has_bits_[0 / 32] & 30u) {
+    ::memset(&type__, 0, reinterpret_cast<char*>(&nuserspas_) -
+      reinterpret_cast<char*>(&type__) + sizeof(nuserspas_));
   }
   _has_bits_.Clear();
   _internal_metadata_.Clear();
@@ -252,6 +258,32 @@ bool BackupMsg::MergePartialFromCodedStream(
         break;
       }
 
+      // optional int32 nusersAct = 4;
+      case 4: {
+        if (tag == 32u) {
+          set_has_nusersact();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &nusersact_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // optional int32 nusersPas = 5;
+      case 5: {
+        if (tag == 40u) {
+          set_has_nuserspas();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &nuserspas_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0 ||
@@ -297,6 +329,16 @@ void BackupMsg::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->role_(), output);
   }
 
+  // optional int32 nusersAct = 4;
+  if (has_nusersact()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->nusersact(), output);
+  }
+
+  // optional int32 nusersPas = 5;
+  if (has_nuserspas()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(5, this->nuserspas(), output);
+  }
+
   if (_internal_metadata_.have_unknown_fields()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -327,6 +369,16 @@ void BackupMsg::SerializeWithCachedSizes(
   // required int32 role_ = 3;
   if (has_role_()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->role_(), target);
+  }
+
+  // optional int32 nusersAct = 4;
+  if (has_nusersact()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->nusersact(), target);
+  }
+
+  // optional int32 nusersPas = 5;
+  if (has_nuserspas()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(5, this->nuserspas(), target);
   }
 
   if (_internal_metadata_.have_unknown_fields()) {
@@ -387,6 +439,22 @@ size_t BackupMsg::ByteSizeLong() const {
         this->origin_());
   }
 
+  if (_has_bits_[0 / 32] & 24u) {
+    // optional int32 nusersAct = 4;
+    if (has_nusersact()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->nusersact());
+    }
+
+    // optional int32 nusersPas = 5;
+    if (has_nuserspas()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->nuserspas());
+    }
+
+  }
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = cached_size;
@@ -413,7 +481,7 @@ void BackupMsg::MergeFrom(const BackupMsg& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:BackupMsg)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom(from._internal_metadata_);
-  if (from._has_bits_[0 / 32] & 7u) {
+  if (from._has_bits_[0 / 32] & 31u) {
     if (from.has_origin_()) {
       set_has_origin_();
       origin__.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.origin__);
@@ -423,6 +491,12 @@ void BackupMsg::MergeFrom(const BackupMsg& from) {
     }
     if (from.has_role_()) {
       set_role_(from.role_());
+    }
+    if (from.has_nusersact()) {
+      set_nusersact(from.nusersact());
+    }
+    if (from.has_nuserspas()) {
+      set_nuserspas(from.nuserspas());
     }
   }
 }
@@ -454,6 +528,8 @@ void BackupMsg::InternalSwap(BackupMsg* other) {
   origin__.Swap(&other->origin__);
   std::swap(type__, other->type__);
   std::swap(role__, other->role__);
+  std::swap(nusersact_, other->nusersact_);
+  std::swap(nuserspas_, other->nuserspas_);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
@@ -575,6 +651,54 @@ void BackupMsg::set_role_(::google::protobuf::int32 value) {
   set_has_role_();
   role__ = value;
   // @@protoc_insertion_point(field_set:BackupMsg.role_)
+}
+
+// optional int32 nusersAct = 4;
+bool BackupMsg::has_nusersact() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+void BackupMsg::set_has_nusersact() {
+  _has_bits_[0] |= 0x00000008u;
+}
+void BackupMsg::clear_has_nusersact() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+void BackupMsg::clear_nusersact() {
+  nusersact_ = 0;
+  clear_has_nusersact();
+}
+::google::protobuf::int32 BackupMsg::nusersact() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.nusersAct)
+  return nusersact_;
+}
+void BackupMsg::set_nusersact(::google::protobuf::int32 value) {
+  set_has_nusersact();
+  nusersact_ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.nusersAct)
+}
+
+// optional int32 nusersPas = 5;
+bool BackupMsg::has_nuserspas() const {
+  return (_has_bits_[0] & 0x00000010u) != 0;
+}
+void BackupMsg::set_has_nuserspas() {
+  _has_bits_[0] |= 0x00000010u;
+}
+void BackupMsg::clear_has_nuserspas() {
+  _has_bits_[0] &= ~0x00000010u;
+}
+void BackupMsg::clear_nuserspas() {
+  nuserspas_ = 0;
+  clear_has_nuserspas();
+}
+::google::protobuf::int32 BackupMsg::nuserspas() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.nusersPas)
+  return nuserspas_;
+}
+void BackupMsg::set_nuserspas(::google::protobuf::int32 value) {
+  set_has_nuserspas();
+  nuserspas_ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.nusersPas)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS

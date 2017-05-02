@@ -4,4 +4,6 @@ message BackupMsg{
     required int32 type_ = 1;
     optional string origin_ = 2;
     required int32 role_ = 3;
+    optional int32 nusersAct = 4;
+    optional int32 nusersPas = 5;
 };

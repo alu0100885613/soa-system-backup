@@ -26,7 +26,8 @@ public:
     }
 
     QTcpSocket* getTheSocket(){
-        getTheServer();
+        Q_ASSERT_X(false,"Server like a User","You are using the Server like a User");
+        return NULL;
     }
 
     int getWhatAmI(){

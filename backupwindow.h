@@ -79,6 +79,8 @@ private slots:
 
     void eraseAllSockets();
 
+    void morePeople(int act, int pas);
+
 signals:
 
 
