@@ -6,19 +6,29 @@ BackupWindow::BackupWindow(QWidget *parent) :
     ui(new Ui::BackupWindow),
     status_(0),
     timer_(new QTimer),
+    timer2_(new QTimer),
+    ack_(new QTimer),
     timeConnected_(0),
     MyMagicObject_(),
     PassiveClientList_(),
     ActiveClientList_(),
     ClientList_(),
-    MagicList_()
+    MagicList_(),
+    BlackList_()
 {
     ui->setupUi(this);
 
     connect(timer_, SIGNAL(timeout()), this, SLOT(showTime()));
+    connect(timer2_,SIGNAL(timeout()), this, SLOT(keepAlive()));
+
+    connect(ack_,&QTimer::timeout,this,[=]{
+        ack_->stop();
+        if(!BlackList_.empty()){
+            executeBlackList();
+        }
+    });
 
     initializeElementsGUI();
-    keepAlive();
 }
 
 BackupWindow::~BackupWindow()
@@ -152,6 +162,10 @@ void BackupWindow::on_connectButton_clicked()
         tryToConnect();
 
         timer_->start(1000);
+
+        if(whatAmI() == 3)
+            timer2_->start(10000);
+
         ui->modeComboBox->setEnabled(false);
         ui->myPortLabel->setText(ui->portLine->text());
         ui->connectButton->setText(disconnectString);
@@ -162,6 +176,7 @@ void BackupWindow::on_connectButton_clicked()
         letsDisconnect();
 
         timer_->stop();
+        timer2_->stop();
         timeConnected_ = 0;
         ui->browseButton->setEnabled(true);
         ui->portLine->setEnabled(true);
@@ -302,11 +317,6 @@ void BackupWindow::addClient(std::string c, int r, QTcpSocket* sck)
             ActiveClientList_.push_back(toInsert);
     }
 
-    qDebug() << MagicList_.size();
-    qDebug() << "Total: " << ClientList_;
-    qDebug() << "Pasivos :" << PassiveClientList_;
-    qDebug() << "Activos :" << ActiveClientList_;
-
 }
 
 void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
@@ -317,7 +327,8 @@ void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
         case 1: addClient(pack.origin_(),pack.role_(),sck);break;
         case 2: wannaDisconnect(sck);break;
         case 3: morePeople(pack.nusersact(),pack.nuserspas());break;
-
+        case 4: imAlive(sck);
+        case 5: eraseFromBlackList(sck);
     }
 }
 
@@ -347,7 +358,15 @@ bool BackupWindow::know_host(QString host)
 
 void BackupWindow::keepAlive()
 {
+    BackupMsg kAlive;
+    kAlive.set_type_(4);
+    kAlive.set_role_(whatAmI());
 
+    QByteArray byteArray(kAlive.SerializeAsString().c_str(), kAlive.ByteSize());
+    BlackList_ = MagicList_;
+
+    multicast(byteArray);
+    ack_->start(8000);
 }
 
 void BackupWindow::wannaDisconnect(QTcpSocket* sck)
@@ -385,8 +404,12 @@ void BackupWindow::wannaDisconnect(QTcpSocket* sck)
 
 void BackupWindow::multicast(QByteArray bytearray)
 {
-    for(int i = 0; i < MagicList_.size() ; i++){
-        MagicList_[i].pointer_->write(bytearray);
+    if(whatAmI() == 3){
+        for(int i = 0; i < MagicList_.size() ; i++){
+            MagicList_[i].pointer_->write(bytearray);
+        }
+    } else {
+        MyMagicObject_->getTheSocket()->write(bytearray);
     }
 }
 
@@ -447,3 +470,30 @@ void BackupWindow::morePeople(int act, int pas)
 
 }
 
+void BackupWindow::imAlive(QTcpSocket *sck)
+{
+    BackupMsg ACK;
+    ACK.set_type_(5);
+    ACK.set_role_(whatAmI());
+
+    QByteArray byteArray(ACK.SerializeAsString().c_str(), ACK.ByteSize());
+    sck->write(byteArray);
+
+}
+
+void BackupWindow::eraseFromBlackList(QTcpSocket* sck)
+{
+    for(int i = 0; i < BlackList_.size() ; i++){
+        if(BlackList_[i].pointer_ == sck){
+            BlackList_.removeAt(i);
+            return;
+        }
+    }
+}
+
+void BackupWindow::executeBlackList()
+{
+    for(auto entry: BlackList_){
+        wannaDisconnect(entry.pointer_);
+    }
+}

@@ -81,20 +81,25 @@ private slots:
 
     void morePeople(int act, int pas);
 
-signals:
+    void imAlive(QTcpSocket* sck);
 
+    void eraseFromBlackList(QTcpSocket* sck);
 
+    void executeBlackList();
 
 private:
     Ui::BackupWindow *ui;
     int status_;
     QTimer* timer_;
+    QTimer* timer2_;
+    QTimer* ack_;
     long timeConnected_;
     MagicObject* MyMagicObject_;
     QStringList PassiveClientList_;
     QStringList ActiveClientList_;
     QStringList ClientList_;
     QVector<MagicNode> MagicList_;
+    QVector<MagicNode> BlackList_;
 
 
 };
