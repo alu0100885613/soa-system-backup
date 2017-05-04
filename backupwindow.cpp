@@ -537,6 +537,6 @@ void BackupWindow::backupStarting(BackupMsg bm)
         multicastPassive(byteArray);
     } else {
         QDir dir;
-        dir.mkpath(ui->directoryLine->text() + "/" QString::fromStdString(bm.origin_()));
+        dir.mkpath(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()));
     }
 }
