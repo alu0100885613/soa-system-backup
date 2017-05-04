@@ -9,6 +9,7 @@
 #include <QFileDialog>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QProcess>
 #include "protocolbuffer.pb.h"
 #include "backupserver.h"
 #include "backupuser.h"
@@ -71,6 +72,8 @@ private slots:
 
     void multicast(QByteArray bytearray);
 
+    void multicastPassive(QByteArray bytearray);
+
     void on_comboUsers_activated(int index);
 
     int getPassives();
@@ -86,6 +89,10 @@ private slots:
     void eraseFromBlackList(QTcpSocket* sck);
 
     void executeBlackList();
+
+    void on_sendButton_clicked();
+
+    void backupStarting(BackupMsg c);
 
 private:
     Ui::BackupWindow *ui;

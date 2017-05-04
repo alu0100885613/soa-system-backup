@@ -331,6 +331,7 @@ void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
         case 3: morePeople(pack.nusersact(),pack.nuserspas());break;
         case 4: imAlive(sck);
         case 5: eraseFromBlackList(sck);
+        case 6: backupStarting(pack);
     }
 }
 
@@ -412,6 +413,14 @@ void BackupWindow::multicast(QByteArray bytearray)
         }
     } else {
         MyMagicObject_->getTheSocket()->write(bytearray);
+    }
+}
+
+void BackupWindow::multicastPassive(QByteArray bytearray)
+{
+    for(int i = 0; i < MagicList_.size() ; i++){
+        if(MagicList_[i].idMode_ == 2)
+            MagicList_[i].pointer_->write(bytearray);
     }
 }
 
@@ -500,5 +509,34 @@ void BackupWindow::executeBlackList()
 {
     for(auto entry: BlackList_){
         wannaDisconnect(entry.pointer_);
+    }
+}
+
+void BackupWindow::on_sendButton_clicked()
+{
+    BackupMsg sendStart;
+    sendStart.set_type_(6);
+    sendStart.set_origin_(ui->myIpLabel->text().toStdString());
+    sendStart.set_role_(whatAmI());
+
+    QByteArray byteArray(sendStart.SerializeAsString().c_str(), sendStart.ByteSize());
+    MyMagicObject_->getTheSocket()->write(byteArray);
+
+
+    ui->browseButton->setEnabled(false);
+    QDir sourceDir(ui->directoryLine->text());
+
+
+}
+
+
+void BackupWindow::backupStarting(BackupMsg bm)
+{
+    if(whatAmI() == 3){
+        QByteArray byteArray(bm.SerializeAsString().c_str(), bm.ByteSize());
+        multicastPassive(byteArray);
+    } else {
+        QDir dir;
+        dir.mkpath(ui->directoryLine->text() + "/" QString::fromStdString(bm.origin_()));
     }
 }
