@@ -38,15 +38,23 @@ const ::google::protobuf::uint32 TableStruct::offsets[] = {
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, role__),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, nusersact_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, nuserspas_),
-  1,
-  0,
-  2,
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, fileordir_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, nameofthing_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, thingpath_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(BackupMsg, sizefile_),
   3,
+  0,
   4,
+  5,
+  6,
+  8,
+  1,
+  2,
+  7,
 };
 
 static const ::google::protobuf::internal::MigrationSchema schemas[] = {
-  { 0, 9, sizeof(BackupMsg)},
+  { 0, 13, sizeof(BackupMsg)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -95,12 +103,14 @@ void InitDefaults() {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] = {
-      "\n\024protocolbuffer.proto\"`\n\tBackupMsg\022\r\n\005t"
-      "ype_\030\001 \002(\005\022\017\n\007origin_\030\002 \001(\t\022\r\n\005role_\030\003 \002"
-      "(\005\022\021\n\tnusersAct\030\004 \001(\005\022\021\n\tnusersPas\030\005 \001(\005"
+      "\n\024protocolbuffer.proto\"\255\001\n\tBackupMsg\022\r\n\005"
+      "type_\030\001 \002(\005\022\017\n\007origin_\030\002 \001(\t\022\r\n\005role_\030\003 "
+      "\002(\005\022\021\n\tnusersAct\030\004 \001(\005\022\021\n\tnusersPas\030\005 \001("
+      "\005\022\021\n\tfileOrDir\030\006 \001(\005\022\023\n\013nameOfThing\030\007 \001("
+      "\t\022\021\n\tthingPath\030\010 \001(\t\022\020\n\010sizeFile\030\t \001(\003"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 120);
+      descriptor, 198);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "protocolbuffer.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&TableStruct::Shutdown);
@@ -128,6 +138,10 @@ const int BackupMsg::kOriginFieldNumber;
 const int BackupMsg::kRoleFieldNumber;
 const int BackupMsg::kNusersActFieldNumber;
 const int BackupMsg::kNusersPasFieldNumber;
+const int BackupMsg::kFileOrDirFieldNumber;
+const int BackupMsg::kNameOfThingFieldNumber;
+const int BackupMsg::kThingPathFieldNumber;
+const int BackupMsg::kSizeFileFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 BackupMsg::BackupMsg()
@@ -148,17 +162,27 @@ BackupMsg::BackupMsg(const BackupMsg& from)
   if (from.has_origin_()) {
     origin__.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.origin__);
   }
+  nameofthing_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.has_nameofthing()) {
+    nameofthing_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.nameofthing_);
+  }
+  thingpath_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.has_thingpath()) {
+    thingpath_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.thingpath_);
+  }
   ::memcpy(&type__, &from.type__,
-    reinterpret_cast<char*>(&nuserspas_) -
-    reinterpret_cast<char*>(&type__) + sizeof(nuserspas_));
+    reinterpret_cast<char*>(&fileordir_) -
+    reinterpret_cast<char*>(&type__) + sizeof(fileordir_));
   // @@protoc_insertion_point(copy_constructor:BackupMsg)
 }
 
 void BackupMsg::SharedCtor() {
   _cached_size_ = 0;
   origin__.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  ::memset(&type__, 0, reinterpret_cast<char*>(&nuserspas_) -
-    reinterpret_cast<char*>(&type__) + sizeof(nuserspas_));
+  nameofthing_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  thingpath_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&type__, 0, reinterpret_cast<char*>(&fileordir_) -
+    reinterpret_cast<char*>(&type__) + sizeof(fileordir_));
 }
 
 BackupMsg::~BackupMsg() {
@@ -168,6 +192,8 @@ BackupMsg::~BackupMsg() {
 
 void BackupMsg::SharedDtor() {
   origin__.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  nameofthing_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  thingpath_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void BackupMsg::SetCachedSize(int size) const {
@@ -195,14 +221,25 @@ BackupMsg* BackupMsg::New(::google::protobuf::Arena* arena) const {
 
 void BackupMsg::Clear() {
 // @@protoc_insertion_point(message_clear_start:BackupMsg)
-  if (has_origin_()) {
-    GOOGLE_DCHECK(!origin__.IsDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited()));
-    (*origin__.UnsafeRawStringPointer())->clear();
+  if (_has_bits_[0 / 32] & 7u) {
+    if (has_origin_()) {
+      GOOGLE_DCHECK(!origin__.IsDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited()));
+      (*origin__.UnsafeRawStringPointer())->clear();
+    }
+    if (has_nameofthing()) {
+      GOOGLE_DCHECK(!nameofthing_.IsDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited()));
+      (*nameofthing_.UnsafeRawStringPointer())->clear();
+    }
+    if (has_thingpath()) {
+      GOOGLE_DCHECK(!thingpath_.IsDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited()));
+      (*thingpath_.UnsafeRawStringPointer())->clear();
+    }
   }
-  if (_has_bits_[0 / 32] & 30u) {
-    ::memset(&type__, 0, reinterpret_cast<char*>(&nuserspas_) -
-      reinterpret_cast<char*>(&type__) + sizeof(nuserspas_));
+  if (_has_bits_[0 / 32] & 248u) {
+    ::memset(&type__, 0, reinterpret_cast<char*>(&sizefile_) -
+      reinterpret_cast<char*>(&type__) + sizeof(sizefile_));
   }
+  fileordir_ = 0;
   _has_bits_.Clear();
   _internal_metadata_.Clear();
 }
@@ -284,6 +321,62 @@ bool BackupMsg::MergePartialFromCodedStream(
         break;
       }
 
+      // optional int32 fileOrDir = 6;
+      case 6: {
+        if (tag == 48u) {
+          set_has_fileordir();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &fileordir_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // optional string nameOfThing = 7;
+      case 7: {
+        if (tag == 58u) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_nameofthing()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+            this->nameofthing().data(), this->nameofthing().length(),
+            ::google::protobuf::internal::WireFormat::PARSE,
+            "BackupMsg.nameOfThing");
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // optional string thingPath = 8;
+      case 8: {
+        if (tag == 66u) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_thingpath()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+            this->thingpath().data(), this->thingpath().length(),
+            ::google::protobuf::internal::WireFormat::PARSE,
+            "BackupMsg.thingPath");
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // optional int64 sizeFile = 9;
+      case 9: {
+        if (tag == 72u) {
+          set_has_sizefile();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
+                 input, &sizefile_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0 ||
@@ -339,6 +432,36 @@ void BackupMsg::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(5, this->nuserspas(), output);
   }
 
+  // optional int32 fileOrDir = 6;
+  if (has_fileordir()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(6, this->fileordir(), output);
+  }
+
+  // optional string nameOfThing = 7;
+  if (has_nameofthing()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+      this->nameofthing().data(), this->nameofthing().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE,
+      "BackupMsg.nameOfThing");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      7, this->nameofthing(), output);
+  }
+
+  // optional string thingPath = 8;
+  if (has_thingpath()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+      this->thingpath().data(), this->thingpath().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE,
+      "BackupMsg.thingPath");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      8, this->thingpath(), output);
+  }
+
+  // optional int64 sizeFile = 9;
+  if (has_sizefile()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(9, this->sizefile(), output);
+  }
+
   if (_internal_metadata_.have_unknown_fields()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -381,6 +504,38 @@ void BackupMsg::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(5, this->nuserspas(), target);
   }
 
+  // optional int32 fileOrDir = 6;
+  if (has_fileordir()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(6, this->fileordir(), target);
+  }
+
+  // optional string nameOfThing = 7;
+  if (has_nameofthing()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+      this->nameofthing().data(), this->nameofthing().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE,
+      "BackupMsg.nameOfThing");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        7, this->nameofthing(), target);
+  }
+
+  // optional string thingPath = 8;
+  if (has_thingpath()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+      this->thingpath().data(), this->thingpath().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE,
+      "BackupMsg.thingPath");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        8, this->thingpath(), target);
+  }
+
+  // optional int64 sizeFile = 9;
+  if (has_sizefile()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(9, this->sizefile(), target);
+  }
+
   if (_internal_metadata_.have_unknown_fields()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -418,7 +573,7 @@ size_t BackupMsg::ByteSizeLong() const {
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         unknown_fields());
   }
-  if (((_has_bits_[0] & 0x00000006) ^ 0x00000006) == 0) {  // All required fields are present.
+  if (((_has_bits_[0] & 0x00000018) ^ 0x00000018) == 0) {  // All required fields are present.
     // required int32 type_ = 1;
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::Int32Size(
@@ -432,14 +587,30 @@ size_t BackupMsg::ByteSizeLong() const {
   } else {
     total_size += RequiredFieldsByteSizeFallback();
   }
-  // optional string origin_ = 2;
-  if (has_origin_()) {
-    total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::StringSize(
-        this->origin_());
-  }
+  if (_has_bits_[0 / 32] & 7u) {
+    // optional string origin_ = 2;
+    if (has_origin_()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->origin_());
+    }
 
-  if (_has_bits_[0 / 32] & 24u) {
+    // optional string nameOfThing = 7;
+    if (has_nameofthing()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->nameofthing());
+    }
+
+    // optional string thingPath = 8;
+    if (has_thingpath()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->thingpath());
+    }
+
+  }
+  if (_has_bits_[0 / 32] & 224u) {
     // optional int32 nusersAct = 4;
     if (has_nusersact()) {
       total_size += 1 +
@@ -454,7 +625,21 @@ size_t BackupMsg::ByteSizeLong() const {
           this->nuserspas());
     }
 
+    // optional int64 sizeFile = 9;
+    if (has_sizefile()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int64Size(
+          this->sizefile());
+    }
+
   }
+  // optional int32 fileOrDir = 6;
+  if (has_fileordir()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->fileordir());
+  }
+
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = cached_size;
@@ -481,10 +666,18 @@ void BackupMsg::MergeFrom(const BackupMsg& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:BackupMsg)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom(from._internal_metadata_);
-  if (from._has_bits_[0 / 32] & 31u) {
+  if (from._has_bits_[0 / 32] & 255u) {
     if (from.has_origin_()) {
       set_has_origin_();
       origin__.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.origin__);
+    }
+    if (from.has_nameofthing()) {
+      set_has_nameofthing();
+      nameofthing_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.nameofthing_);
+    }
+    if (from.has_thingpath()) {
+      set_has_thingpath();
+      thingpath_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.thingpath_);
     }
     if (from.has_type_()) {
       set_type_(from.type_());
@@ -498,6 +691,12 @@ void BackupMsg::MergeFrom(const BackupMsg& from) {
     if (from.has_nuserspas()) {
       set_nuserspas(from.nuserspas());
     }
+    if (from.has_sizefile()) {
+      set_sizefile(from.sizefile());
+    }
+  }
+  if (from.has_fileordir()) {
+    set_fileordir(from.fileordir());
   }
 }
 
@@ -516,7 +715,7 @@ void BackupMsg::CopyFrom(const BackupMsg& from) {
 }
 
 bool BackupMsg::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000006) != 0x00000006) return false;
+  if ((_has_bits_[0] & 0x00000018) != 0x00000018) return false;
   return true;
 }
 
@@ -526,10 +725,14 @@ void BackupMsg::Swap(BackupMsg* other) {
 }
 void BackupMsg::InternalSwap(BackupMsg* other) {
   origin__.Swap(&other->origin__);
+  nameofthing_.Swap(&other->nameofthing_);
+  thingpath_.Swap(&other->thingpath_);
   std::swap(type__, other->type__);
   std::swap(role__, other->role__);
   std::swap(nusersact_, other->nusersact_);
   std::swap(nuserspas_, other->nuserspas_);
+  std::swap(sizefile_, other->sizefile_);
+  std::swap(fileordir_, other->fileordir_);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
@@ -545,13 +748,13 @@ void BackupMsg::InternalSwap(BackupMsg* other) {
 
 // required int32 type_ = 1;
 bool BackupMsg::has_type_() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 void BackupMsg::set_has_type_() {
-  _has_bits_[0] |= 0x00000002u;
+  _has_bits_[0] |= 0x00000008u;
 }
 void BackupMsg::clear_has_type_() {
-  _has_bits_[0] &= ~0x00000002u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 void BackupMsg::clear_type_() {
   type__ = 0;
@@ -631,13 +834,13 @@ void BackupMsg::set_allocated_origin_(::std::string* origin_) {
 
 // required int32 role_ = 3;
 bool BackupMsg::has_role_() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 void BackupMsg::set_has_role_() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000010u;
 }
 void BackupMsg::clear_has_role_() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 void BackupMsg::clear_role_() {
   role__ = 0;
@@ -655,13 +858,13 @@ void BackupMsg::set_role_(::google::protobuf::int32 value) {
 
 // optional int32 nusersAct = 4;
 bool BackupMsg::has_nusersact() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000020u) != 0;
 }
 void BackupMsg::set_has_nusersact() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000020u;
 }
 void BackupMsg::clear_has_nusersact() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000020u;
 }
 void BackupMsg::clear_nusersact() {
   nusersact_ = 0;
@@ -679,13 +882,13 @@ void BackupMsg::set_nusersact(::google::protobuf::int32 value) {
 
 // optional int32 nusersPas = 5;
 bool BackupMsg::has_nuserspas() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000040u) != 0;
 }
 void BackupMsg::set_has_nuserspas() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000040u;
 }
 void BackupMsg::clear_has_nuserspas() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 void BackupMsg::clear_nuserspas() {
   nuserspas_ = 0;
@@ -699,6 +902,178 @@ void BackupMsg::set_nuserspas(::google::protobuf::int32 value) {
   set_has_nuserspas();
   nuserspas_ = value;
   // @@protoc_insertion_point(field_set:BackupMsg.nusersPas)
+}
+
+// optional int32 fileOrDir = 6;
+bool BackupMsg::has_fileordir() const {
+  return (_has_bits_[0] & 0x00000100u) != 0;
+}
+void BackupMsg::set_has_fileordir() {
+  _has_bits_[0] |= 0x00000100u;
+}
+void BackupMsg::clear_has_fileordir() {
+  _has_bits_[0] &= ~0x00000100u;
+}
+void BackupMsg::clear_fileordir() {
+  fileordir_ = 0;
+  clear_has_fileordir();
+}
+::google::protobuf::int32 BackupMsg::fileordir() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.fileOrDir)
+  return fileordir_;
+}
+void BackupMsg::set_fileordir(::google::protobuf::int32 value) {
+  set_has_fileordir();
+  fileordir_ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.fileOrDir)
+}
+
+// optional string nameOfThing = 7;
+bool BackupMsg::has_nameofthing() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+void BackupMsg::set_has_nameofthing() {
+  _has_bits_[0] |= 0x00000002u;
+}
+void BackupMsg::clear_has_nameofthing() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+void BackupMsg::clear_nameofthing() {
+  nameofthing_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  clear_has_nameofthing();
+}
+const ::std::string& BackupMsg::nameofthing() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.nameOfThing)
+  return nameofthing_.GetNoArena();
+}
+void BackupMsg::set_nameofthing(const ::std::string& value) {
+  set_has_nameofthing();
+  nameofthing_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:BackupMsg.nameOfThing)
+}
+#if LANG_CXX11
+void BackupMsg::set_nameofthing(::std::string&& value) {
+  set_has_nameofthing();
+  nameofthing_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:BackupMsg.nameOfThing)
+}
+#endif
+void BackupMsg::set_nameofthing(const char* value) {
+  set_has_nameofthing();
+  nameofthing_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:BackupMsg.nameOfThing)
+}
+void BackupMsg::set_nameofthing(const char* value, size_t size) {
+  set_has_nameofthing();
+  nameofthing_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:BackupMsg.nameOfThing)
+}
+::std::string* BackupMsg::mutable_nameofthing() {
+  set_has_nameofthing();
+  // @@protoc_insertion_point(field_mutable:BackupMsg.nameOfThing)
+  return nameofthing_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+::std::string* BackupMsg::release_nameofthing() {
+  // @@protoc_insertion_point(field_release:BackupMsg.nameOfThing)
+  clear_has_nameofthing();
+  return nameofthing_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+void BackupMsg::set_allocated_nameofthing(::std::string* nameofthing) {
+  if (nameofthing != NULL) {
+    set_has_nameofthing();
+  } else {
+    clear_has_nameofthing();
+  }
+  nameofthing_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), nameofthing);
+  // @@protoc_insertion_point(field_set_allocated:BackupMsg.nameOfThing)
+}
+
+// optional string thingPath = 8;
+bool BackupMsg::has_thingpath() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+void BackupMsg::set_has_thingpath() {
+  _has_bits_[0] |= 0x00000004u;
+}
+void BackupMsg::clear_has_thingpath() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+void BackupMsg::clear_thingpath() {
+  thingpath_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  clear_has_thingpath();
+}
+const ::std::string& BackupMsg::thingpath() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.thingPath)
+  return thingpath_.GetNoArena();
+}
+void BackupMsg::set_thingpath(const ::std::string& value) {
+  set_has_thingpath();
+  thingpath_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:BackupMsg.thingPath)
+}
+#if LANG_CXX11
+void BackupMsg::set_thingpath(::std::string&& value) {
+  set_has_thingpath();
+  thingpath_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:BackupMsg.thingPath)
+}
+#endif
+void BackupMsg::set_thingpath(const char* value) {
+  set_has_thingpath();
+  thingpath_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:BackupMsg.thingPath)
+}
+void BackupMsg::set_thingpath(const char* value, size_t size) {
+  set_has_thingpath();
+  thingpath_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:BackupMsg.thingPath)
+}
+::std::string* BackupMsg::mutable_thingpath() {
+  set_has_thingpath();
+  // @@protoc_insertion_point(field_mutable:BackupMsg.thingPath)
+  return thingpath_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+::std::string* BackupMsg::release_thingpath() {
+  // @@protoc_insertion_point(field_release:BackupMsg.thingPath)
+  clear_has_thingpath();
+  return thingpath_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+void BackupMsg::set_allocated_thingpath(::std::string* thingpath) {
+  if (thingpath != NULL) {
+    set_has_thingpath();
+  } else {
+    clear_has_thingpath();
+  }
+  thingpath_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), thingpath);
+  // @@protoc_insertion_point(field_set_allocated:BackupMsg.thingPath)
+}
+
+// optional int64 sizeFile = 9;
+bool BackupMsg::has_sizefile() const {
+  return (_has_bits_[0] & 0x00000080u) != 0;
+}
+void BackupMsg::set_has_sizefile() {
+  _has_bits_[0] |= 0x00000080u;
+}
+void BackupMsg::clear_has_sizefile() {
+  _has_bits_[0] &= ~0x00000080u;
+}
+void BackupMsg::clear_sizefile() {
+  sizefile_ = GOOGLE_LONGLONG(0);
+  clear_has_sizefile();
+}
+::google::protobuf::int64 BackupMsg::sizefile() const {
+  // @@protoc_insertion_point(field_get:BackupMsg.sizeFile)
+  return sizefile_;
+}
+void BackupMsg::set_sizefile(::google::protobuf::int64 value) {
+  set_has_sizefile();
+  sizefile_ = value;
+  // @@protoc_insertion_point(field_set:BackupMsg.sizeFile)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS

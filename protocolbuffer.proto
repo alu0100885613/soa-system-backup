@@ -6,4 +6,8 @@ message BackupMsg{
     required int32 role_ = 3;
     optional int32 nusersAct = 4;
     optional int32 nusersPas = 5;
+    optional int32 fileOrDir = 6;
+    optional string nameOfThing = 7;
+    optional string thingPath = 8;
+    optional int64 sizeFile = 9;
 };

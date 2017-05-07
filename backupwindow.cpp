@@ -1,5 +1,9 @@
 #include "backupwindow.h"
 #include "ui_backupwindow.h"
+#define NUMBER_OF_PASSIVES_REQUIRED 1
+#define ACTIVES 1
+#define PASSIVES 2
+#define SERVER 3
 
 BackupWindow::BackupWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -14,7 +18,11 @@ BackupWindow::BackupWindow(QWidget *parent) :
     ActiveClientList_(),
     ClientList_(),
     MagicList_(),
-    BlackList_()
+    BlackList_(),
+    FileQueue_(),
+    PackagesQueue_(),
+    TransferList_(),
+    checkPack_(0)
 {
     ui->setupUi(this);
 
@@ -166,6 +174,7 @@ void BackupWindow::on_connectButton_clicked()
         if(whatAmI() == 3)
             timer2_->start(10000);
 
+        ui->browseButton->setEnabled(false);
         ui->modeComboBox->setEnabled(false);
         ui->myPortLabel->setText(ui->portLine->text());
         ui->connectButton->setText(disconnectString);
@@ -178,7 +187,10 @@ void BackupWindow::on_connectButton_clicked()
         timer_->stop();
         timer2_->stop();
         timeConnected_ = 0;
-        ui->browseButton->setEnabled(true);
+
+        if(whatAmI() != SERVER){
+            ui->browseButton->setEnabled(true);
+        }
         ui->portLine->setEnabled(true);
         ui->connectButton->setText(connectString);
         changeStatus();
@@ -272,6 +284,7 @@ void BackupWindow::welcome()
         ccVirtualUser->getTheSocket()->write(byteArray);
         connect(ccVirtualUser->getTheSocket(),&QTcpSocket::readyRead,this,[=]{
             QByteArray dataIn = ccVirtualUser->getTheSocket()->readAll();
+            qDebug() << dataIn;
             BackupMsg pack;
             pack.ParseFromArray(dataIn.data(),dataIn.size());
             analyzePack(pack,ccVirtualUser->getTheSocket());
@@ -323,15 +336,19 @@ void BackupWindow::addClient(std::string c, int r, QTcpSocket* sck)
 
 void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
 {
+    qDebug() << pack.type_();
     switch(pack.type_())
     {
         case 0: returnMyIp();break;
         case 1: addClient(pack.origin_(),pack.role_(),sck);break;
         case 2: wannaDisconnect(sck);break;
         case 3: morePeople(pack.nusersact(),pack.nuserspas());break;
-        case 4: imAlive(sck);
-        case 5: eraseFromBlackList(sck);
-        case 6: backupStarting(pack);
+        case 4: imAlive(sck);break;
+        case 5: eraseFromBlackList(sck);break;
+    case 6: qDebug() << "llamada";backupStarting(pack,sck);break;
+        case 7: mountDirAndFiles(pack);break;
+        case 8: checkedPacks(pack);break;
+        case 9: channelBusy();break;
     }
 }
 
@@ -378,7 +395,16 @@ void BackupWindow::wannaDisconnect(QTcpSocket* sck)
         for(int i = 0; i < MagicList_.size() ; i++){
             if(MagicList_[i].pointer_ == sck){
                 MagicList_[i].pointer_->close();
-                MagicList_.removeAt(i);
+                if(contained(TransferList_,MagicList_[i])){
+                    qDebug() << TransferList_.size();
+                    removeThatItem(TransferList_,MagicList_[i]);
+                    BackupMsg checked;
+                    checked.set_type_(8);
+                    checked.set_role_(whatAmI());
+                    checkedPacks(checked);
+                    qDebug() << TransferList_.size();
+                }
+                MagicList_.removeAt(i);              
                 ui->nusers->setText(QString::number(MagicList_.size()));
                 BackupMsg infOthers;
                 infOthers.set_type_(3);
@@ -419,10 +445,38 @@ void BackupWindow::multicast(QByteArray bytearray)
 void BackupWindow::multicastPassive(QByteArray bytearray)
 {
     for(int i = 0; i < MagicList_.size() ; i++){
-        if(MagicList_[i].idMode_ == 2)
+        if(MagicList_[i].idMode_ == PASSIVES)
             MagicList_[i].pointer_->write(bytearray);
     }
 }
+
+void BackupWindow::multicastPassiveTL(QByteArray bytearray)
+{
+    for(int i = 0; i < TransferList_.size() ; i++){
+        if(TransferList_[i].idMode_ == PASSIVES){
+            TransferList_[i].pointer_->write(bytearray);
+        }
+    }
+}
+
+void BackupWindow::multicastActive(QByteArray bytearray)
+{
+    for(int i = 0; i < MagicList_.size() ; i++){
+        if(MagicList_[i].idMode_ == ACTIVES)
+            MagicList_[i].pointer_->write(bytearray);
+    }
+}
+
+void BackupWindow::multicastActiveTL(QByteArray bytearray)
+{
+    for(int i = 0; i < TransferList_.size() ; i++){
+        if(TransferList_[i].idMode_ == ACTIVES)
+            TransferList_[i].pointer_->write(bytearray);
+        return;
+    }
+}
+
+
 
 void BackupWindow::on_comboUsers_activated(int index)
 {
@@ -474,7 +528,7 @@ void BackupWindow::morePeople(int act, int pas)
 {
     if(whatAmI() == 1){
         ui->nusers->setText(QString::number(pas));
-        if(pas >= 3)
+        if(pas >= NUMBER_OF_PASSIVES_REQUIRED)
             ui->sendButton->setEnabled(true);
         else
             ui->sendButton->setEnabled(false);
@@ -514,29 +568,177 @@ void BackupWindow::executeBlackList()
 
 void BackupWindow::on_sendButton_clicked()
 {
+    qDebug() << "paquetito va";
     BackupMsg sendStart;
     sendStart.set_type_(6);
     sendStart.set_origin_(ui->myIpLabel->text().toStdString());
     sendStart.set_role_(whatAmI());
 
     QByteArray byteArray(sendStart.SerializeAsString().c_str(), sendStart.ByteSize());
+    qDebug() << byteArray;
     MyMagicObject_->getTheSocket()->write(byteArray);
+    MyMagicObject_->getTheSocket()->waitForBytesWritten();
 
 
     ui->browseButton->setEnabled(false);
     QDir sourceDir(ui->directoryLine->text());
 
-
+    sourceDir.setFilter(QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Files | QDir::Dirs);
+    scanDirectory(sourceDir);
 }
 
 
-void BackupWindow::backupStarting(BackupMsg bm)
+void BackupWindow::backupStarting(BackupMsg bm, QTcpSocket* sck)
 {
+    qDebug() << "Al menos entro:(";
+    ui->browseButton->setEnabled(false);
+
     if(whatAmI() == 3){
         QByteArray byteArray(bm.SerializeAsString().c_str(), bm.ByteSize());
-        multicastPassive(byteArray);
+        MagicNode node;
+        node.pointer_ = sck;
+        node.idMode_ = ACTIVES;
+        TransferList_.push_back(node);
+        includePassives();
+        busyChannel();
+        qDebug() <<"transferlist size: "<< TransferList_.size();
+        multicastPassiveTL(byteArray);
     } else {
         QDir dir;
         dir.mkpath(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()));
+    }
+}
+
+void BackupWindow::scanDirectory(QDir dir)
+{
+    for(auto entry: dir.entryList()){
+        QFileInfo file(dir.absolutePath() + "/" + entry);
+
+        if(file.isDir()){
+            qDebug() << "identificar dir";
+            BackupMsg content;
+            content.set_type_(7);
+            content.set_origin_(ui->myIpLabel->text().toStdString());
+            content.set_role_(whatAmI());
+            content.set_nameofthing(entry.toStdString());
+            content.set_fileordir(0);
+            QString destPath = "";
+            content.set_thingpath(destPath.toStdString());
+
+            QByteArray byteArray(content.SerializeAsString().c_str(), content.ByteSize());
+            PackagesQueue_.enqueue(byteArray);
+        }
+
+        if(file.isFile()){
+            qDebug() << "identificar file";
+            qint64 sz = file.size();
+            QString file_name = file.fileName();
+            QString file_path = file.path();
+
+            MyFiles FileData;
+            FileData.size_ = sz;
+            FileData.name_ = file_name;
+            FileData.path_ = file_path;
+
+            FileQueue_.enqueue(FileData);
+
+        }
+    }
+
+    if(!PackagesQueue_.empty())
+        MyMagicObject_->getTheSocket()->write(PackagesQueue_.dequeue());
+
+}
+
+void BackupWindow::mountDirAndFiles(BackupMsg bm)
+{
+    if(whatAmI() == 3){
+        QByteArray byteArray(bm.SerializeAsString().c_str(), bm.ByteSize());
+        multicastPassiveTL(byteArray);
+    } else {
+        if(bm.fileordir() == 0){
+            QDir dir(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()) + "/" + QString::fromStdString(bm.thingpath()));
+            dir.mkpath(dir.absolutePath() + "/" + QString::fromStdString(bm.nameofthing()));
+
+            BackupMsg checked;
+            checked.set_type_(8);
+            checked.set_role_(whatAmI());
+            QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
+            MyMagicObject_->getTheSocket()->write(byteArray);
+            qDebug() << "enviando los checks";
+         }
+    }
+}
+
+void BackupWindow::checkedPacks(BackupMsg bm)
+{
+    if(whatAmI() == 3){
+        QByteArray byteArray(bm.SerializeAsString().c_str(), bm.ByteSize());
+        if(bm.role_() == PASSIVES){
+            checkPack_++;
+        }
+        qDebug() << checkPack_ << " " << TransferList_.size()-1;
+
+        if(checkPack_ == TransferList_.size()-1){
+            multicastActiveTL(byteArray);
+            checkPack_ = 0;
+        }
+    } else {
+        qDebug() << "checked" << PackagesQueue_.size();
+        if(!PackagesQueue_.empty())
+            MyMagicObject_->getTheSocket()->write(PackagesQueue_.dequeue());
+    }
+
+}
+
+void BackupWindow::includePassives()
+{
+    for(int i = 0; i < MagicList_.size() ; i++){
+        if(MagicList_[i].idMode_ == PASSIVES){
+            TransferList_.push_back(MagicList_[i]);
+        }
+    }
+}
+
+void BackupWindow::busyChannel()
+{
+    BackupMsg bc;
+    bc.set_type_(9);
+    bc.set_role_(whatAmI());
+
+    QByteArray byteArray(bc.SerializeAsString().c_str(), bc.ByteSize());
+
+
+    for(int i = 0; i < MagicList_.size() ; i++){
+        if(MagicList_[i].idMode_ == ACTIVES){
+            if(!contained(TransferList_,MagicList_[i]))
+                MagicList_[i].pointer_->write(byteArray);
+
+        }
+    }
+}
+
+void BackupWindow::channelBusy()
+{
+    ui->sendButton->setEnabled(false);
+}
+
+bool BackupWindow::contained(QVector<MagicNode> tl, MagicNode mn)
+{
+    for(int i = 0; i < tl.size() ; i++){
+        if(tl[i].pointer_ == mn.pointer_)
+            return true;
+    }
+
+    return false;
+}
+
+void BackupWindow::removeThatItem(QVector<MagicNode> tl, MagicNode mn)
+{
+    for(int i = 0; i < tl.size() ; i++){
+        if(tl[i].pointer_ == mn.pointer_){
+            tl.removeAt(i);
+            return;
+        }
     }
 }

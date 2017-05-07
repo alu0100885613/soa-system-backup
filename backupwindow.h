@@ -10,6 +10,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QProcess>
+#include <QQueue>
 #include "protocolbuffer.pb.h"
 #include "backupserver.h"
 #include "backupuser.h"
@@ -21,6 +22,12 @@ class BackupWindow;
 struct MagicNode{
     QTcpSocket* pointer_;
     int idMode_;
+};
+
+struct MyFiles{
+    qint64 size_;
+    QString name_;
+    QString path_;
 };
 
 class BackupWindow : public QMainWindow
@@ -74,6 +81,12 @@ private slots:
 
     void multicastPassive(QByteArray bytearray);
 
+    void multicastPassiveTL(QByteArray bytearray);
+
+    void multicastActive(QByteArray bytearray);
+
+    void multicastActiveTL(QByteArray bytearray);
+
     void on_comboUsers_activated(int index);
 
     int getPassives();
@@ -92,7 +105,23 @@ private slots:
 
     void on_sendButton_clicked();
 
-    void backupStarting(BackupMsg c);
+    void backupStarting(BackupMsg c, QTcpSocket* sck);
+
+    void scanDirectory(QDir dir);
+
+    void mountDirAndFiles(BackupMsg bm);
+
+    void checkedPacks(BackupMsg bm);
+
+    void includePassives();
+
+    void busyChannel();
+
+    void channelBusy();
+
+    bool contained(QVector<MagicNode> tl, MagicNode mn);
+
+    void removeThatItem(QVector<MagicNode> tl, MagicNode mn);
 
 private:
     Ui::BackupWindow *ui;
@@ -107,7 +136,10 @@ private:
     QStringList ClientList_;
     QVector<MagicNode> MagicList_;
     QVector<MagicNode> BlackList_;
-
+    QQueue<MyFiles> FileQueue_;
+    QQueue<QByteArray> PackagesQueue_;
+    QVector<MagicNode> TransferList_;
+    int checkPack_;
 
 };
 
