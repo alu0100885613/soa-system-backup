@@ -11,6 +11,7 @@
 #include <QTcpSocket>
 #include <QProcess>
 #include <QQueue>
+#include <QDirIterator>
 #include "protocolbuffer.pb.h"
 #include "backupserver.h"
 #include "backupuser.h"
@@ -121,7 +122,9 @@ private slots:
 
     bool contained(QVector<MagicNode> tl, MagicNode mn);
 
-    void removeThatItem(QVector<MagicNode> tl, MagicNode mn);
+    void removeThatItem(QVector<MagicNode>& tl, MagicNode mn);
+
+    void removeAll(QVector<MagicNode>& tl);
 
 private:
     Ui::BackupWindow *ui;

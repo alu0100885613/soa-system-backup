@@ -172,7 +172,7 @@ void BackupWindow::on_connectButton_clicked()
         timer_->start(1000);
 
         if(whatAmI() == 3)
-            timer2_->start(10000);
+            timer2_->start(5000);
 
         ui->browseButton->setEnabled(false);
         ui->modeComboBox->setEnabled(false);
@@ -240,6 +240,7 @@ void BackupWindow::letsDisconnect()
 
         QByteArray byteArray(byeMsg.SerializeAsString().c_str(), byeMsg.ByteSize());
         MyMagicObject_->getTheSocket()->write(byteArray);
+        MyMagicObject_->getTheSocket()->waitForBytesWritten();
         MyMagicObject_->getTheSocket()->close();
     }
 }
@@ -273,9 +274,13 @@ void BackupWindow::welcome()
 {
     BackupMsg helloMsg;
 
-    helloMsg.set_type_(0);
-    helloMsg.set_role_(whatAmI());
+    if(TransferList_.size() > 0){
+        helloMsg.set_type_(9);
+    } else {
+        helloMsg.set_type_(0);
+    }
 
+    helloMsg.set_role_(whatAmI());
     QByteArray byteArray(helloMsg.SerializeAsString().c_str(),helloMsg.ByteSize());
 
     while(MyMagicObject_->getTheServer()->hasPendingConnections())
@@ -284,14 +289,11 @@ void BackupWindow::welcome()
         ccVirtualUser->getTheSocket()->write(byteArray);
         connect(ccVirtualUser->getTheSocket(),&QTcpSocket::readyRead,this,[=]{
             QByteArray dataIn = ccVirtualUser->getTheSocket()->readAll();
-            qDebug() << dataIn;
             BackupMsg pack;
             pack.ParseFromArray(dataIn.data(),dataIn.size());
             analyzePack(pack,ccVirtualUser->getTheSocket());
         });
     }
-
-
 }
 
 void BackupWindow::readyRec()
@@ -336,7 +338,6 @@ void BackupWindow::addClient(std::string c, int r, QTcpSocket* sck)
 
 void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
 {
-    qDebug() << pack.type_();
     switch(pack.type_())
     {
         case 0: returnMyIp();break;
@@ -345,7 +346,7 @@ void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
         case 3: morePeople(pack.nusersact(),pack.nuserspas());break;
         case 4: imAlive(sck);break;
         case 5: eraseFromBlackList(sck);break;
-    case 6: qDebug() << "llamada";backupStarting(pack,sck);break;
+        case 6: backupStarting(pack,sck);break;
         case 7: mountDirAndFiles(pack);break;
         case 8: checkedPacks(pack);break;
         case 9: channelBusy();break;
@@ -386,7 +387,7 @@ void BackupWindow::keepAlive()
     BlackList_ = MagicList_;
 
     multicast(byteArray);
-    ack_->start(8000);
+    ack_->start(3000);
 }
 
 void BackupWindow::wannaDisconnect(QTcpSocket* sck)
@@ -396,13 +397,18 @@ void BackupWindow::wannaDisconnect(QTcpSocket* sck)
             if(MagicList_[i].pointer_ == sck){
                 MagicList_[i].pointer_->close();
                 if(contained(TransferList_,MagicList_[i])){
-                    qDebug() << TransferList_.size();
-                    removeThatItem(TransferList_,MagicList_[i]);
-                    BackupMsg checked;
-                    checked.set_type_(8);
-                    checked.set_role_(whatAmI());
-                    checkedPacks(checked);
-                    qDebug() << TransferList_.size();
+                    if(MagicList_[i].idMode_ == ACTIVES){
+                        qDebug() << "removeall";
+                        removeAll(TransferList_);
+                        qDebug() << TransferList_.size() << TransferList_.first().pointer_;
+                    } else {
+                        qDebug() << "removeOne";
+                        removeThatItem(TransferList_,MagicList_[i]);
+                        BackupMsg checked;
+                        checked.set_type_(8);
+                        checked.set_role_(whatAmI());
+                        checkedPacks(checked);
+                    }
                 }
                 MagicList_.removeAt(i);              
                 ui->nusers->setText(QString::number(MagicList_.size()));
@@ -475,8 +481,6 @@ void BackupWindow::multicastActiveTL(QByteArray bytearray)
         return;
     }
 }
-
-
 
 void BackupWindow::on_comboUsers_activated(int index)
 {
@@ -568,14 +572,12 @@ void BackupWindow::executeBlackList()
 
 void BackupWindow::on_sendButton_clicked()
 {
-    qDebug() << "paquetito va";
     BackupMsg sendStart;
     sendStart.set_type_(6);
     sendStart.set_origin_(ui->myIpLabel->text().toStdString());
     sendStart.set_role_(whatAmI());
 
     QByteArray byteArray(sendStart.SerializeAsString().c_str(), sendStart.ByteSize());
-    qDebug() << byteArray;
     MyMagicObject_->getTheSocket()->write(byteArray);
     MyMagicObject_->getTheSocket()->waitForBytesWritten();
 
@@ -587,10 +589,8 @@ void BackupWindow::on_sendButton_clicked()
     scanDirectory(sourceDir);
 }
 
-
 void BackupWindow::backupStarting(BackupMsg bm, QTcpSocket* sck)
 {
-    qDebug() << "Al menos entro:(";
     ui->browseButton->setEnabled(false);
 
     if(whatAmI() == 3){
@@ -598,10 +598,13 @@ void BackupWindow::backupStarting(BackupMsg bm, QTcpSocket* sck)
         MagicNode node;
         node.pointer_ = sck;
         node.idMode_ = ACTIVES;
-        TransferList_.push_back(node);
+        if(!contained(TransferList_,node))
+            TransferList_.push_back(node);
         includePassives();
         busyChannel();
-        qDebug() <<"transferlist size: "<< TransferList_.size();
+        for(auto entry: TransferList_){
+            qDebug() <<"transferlist size: "<< entry.pointer_;
+        }
         multicastPassiveTL(byteArray);
     } else {
         QDir dir;
@@ -611,29 +614,28 @@ void BackupWindow::backupStarting(BackupMsg bm, QTcpSocket* sck)
 
 void BackupWindow::scanDirectory(QDir dir)
 {
-    for(auto entry: dir.entryList()){
-        QFileInfo file(dir.absolutePath() + "/" + entry);
 
-        if(file.isDir()){
-            qDebug() << "identificar dir";
+    QDirIterator it(dir.absolutePath(),QDirIterator::Subdirectories);
+
+    while(it.hasNext()){
+        QFileInfo fileInfo(it.next());
+        if(fileInfo.isDir()){
             BackupMsg content;
             content.set_type_(7);
             content.set_origin_(ui->myIpLabel->text().toStdString());
             content.set_role_(whatAmI());
-            content.set_nameofthing(entry.toStdString());
+            content.set_nameofthing(fileInfo.absolutePath().toStdString());
             content.set_fileordir(0);
-            QString destPath = "";
-            content.set_thingpath(destPath.toStdString());
 
+
+            qDebug() << QString::fromStdString(content.nameofthing());
             QByteArray byteArray(content.SerializeAsString().c_str(), content.ByteSize());
             PackagesQueue_.enqueue(byteArray);
         }
-
-        if(file.isFile()){
-            qDebug() << "identificar file";
-            qint64 sz = file.size();
-            QString file_name = file.fileName();
-            QString file_path = file.path();
+        if(fileInfo.isFile()){
+            qint64 sz = fileInfo.size();
+            QString file_name = fileInfo.fileName();
+            QString file_path = fileInfo.path();
 
             MyFiles FileData;
             FileData.size_ = sz;
@@ -657,7 +659,7 @@ void BackupWindow::mountDirAndFiles(BackupMsg bm)
         multicastPassiveTL(byteArray);
     } else {
         if(bm.fileordir() == 0){
-            QDir dir(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()) + "/" + QString::fromStdString(bm.thingpath()));
+            QDir dir(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()));
             dir.mkpath(dir.absolutePath() + "/" + QString::fromStdString(bm.nameofthing()));
 
             BackupMsg checked;
@@ -665,7 +667,6 @@ void BackupWindow::mountDirAndFiles(BackupMsg bm)
             checked.set_role_(whatAmI());
             QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
             MyMagicObject_->getTheSocket()->write(byteArray);
-            qDebug() << "enviando los checks";
          }
     }
 }
@@ -677,14 +678,12 @@ void BackupWindow::checkedPacks(BackupMsg bm)
         if(bm.role_() == PASSIVES){
             checkPack_++;
         }
-        qDebug() << checkPack_ << " " << TransferList_.size()-1;
 
         if(checkPack_ == TransferList_.size()-1){
             multicastActiveTL(byteArray);
             checkPack_ = 0;
         }
     } else {
-        qDebug() << "checked" << PackagesQueue_.size();
         if(!PackagesQueue_.empty())
             MyMagicObject_->getTheSocket()->write(PackagesQueue_.dequeue());
     }
@@ -695,7 +694,8 @@ void BackupWindow::includePassives()
 {
     for(int i = 0; i < MagicList_.size() ; i++){
         if(MagicList_[i].idMode_ == PASSIVES){
-            TransferList_.push_back(MagicList_[i]);
+            if(!contained(TransferList_,MagicList_[i]))
+                TransferList_.push_back(MagicList_[i]);
         }
     }
 }
@@ -721,6 +721,8 @@ void BackupWindow::busyChannel()
 void BackupWindow::channelBusy()
 {
     ui->sendButton->setEnabled(false);
+
+    returnMyIp();
 }
 
 bool BackupWindow::contained(QVector<MagicNode> tl, MagicNode mn)
@@ -733,12 +735,19 @@ bool BackupWindow::contained(QVector<MagicNode> tl, MagicNode mn)
     return false;
 }
 
-void BackupWindow::removeThatItem(QVector<MagicNode> tl, MagicNode mn)
+void BackupWindow::removeThatItem(QVector<MagicNode>& tl, MagicNode mn)
 {
     for(int i = 0; i < tl.size() ; i++){
         if(tl[i].pointer_ == mn.pointer_){
             tl.removeAt(i);
             return;
         }
+    }
+}
+
+void BackupWindow::removeAll(QVector<MagicNode>& tl)
+{
+    for(int i = 0; i < tl.size() ; i++){
+        tl.removeAt(i);
     }
 }
