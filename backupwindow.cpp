@@ -643,8 +643,12 @@ void BackupWindow::scanDirectory(QDir dir)
             FileData.path_ = file_path;
 
             FileQueue_.enqueue(FileData);
-
         }
+    }
+
+    while(!FileQueue_.empty()){
+       MyFiles a =  FileQueue_.dequeue();
+       qDebug() << " NOMBRE:" << a.name_ << "  SIZE:" << a.size_;
     }
 
     if(!PackagesQueue_.empty())
