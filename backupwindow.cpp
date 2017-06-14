@@ -4,6 +4,8 @@
 #define ACTIVES 1
 #define PASSIVES 2
 #define SERVER 3
+#define FILE 1
+#define DIR 0
 
 BackupWindow::BackupWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -22,7 +24,9 @@ BackupWindow::BackupWindow(QWidget *parent) :
     FileQueue_(),
     PackagesQueue_(),
     TransferList_(),
-    checkPack_(0)
+    checkPack_(0),
+    totalBytes_(0),
+    jump_(false)
 {
     ui->setupUi(this);
 
@@ -350,6 +354,7 @@ void BackupWindow::analyzePack(BackupMsg pack, QTcpSocket* sck)
         case 7: mountDirAndFiles(pack);break;
         case 8: checkedPacks(pack);break;
         case 9: channelBusy();break;
+        case 10: understandSize(pack);break;
     }
 }
 
@@ -614,7 +619,7 @@ void BackupWindow::backupStarting(BackupMsg bm, QTcpSocket* sck)
 
 void BackupWindow::scanDirectory(QDir dir)
 {
-
+    totalBytes_ = 0;
     QDirIterator it(dir.absolutePath(),QDirIterator::Subdirectories);
 
     while(it.hasNext()){
@@ -625,10 +630,8 @@ void BackupWindow::scanDirectory(QDir dir)
             content.set_origin_(ui->myIpLabel->text().toStdString());
             content.set_role_(whatAmI());
             content.set_nameofthing(fileInfo.absolutePath().toStdString());
-            content.set_fileordir(0);
+            content.set_fileordir(DIR);
 
-
-            qDebug() << QString::fromStdString(content.nameofthing());
             QByteArray byteArray(content.SerializeAsString().c_str(), content.ByteSize());
             PackagesQueue_.enqueue(byteArray);
         }
@@ -636,6 +639,8 @@ void BackupWindow::scanDirectory(QDir dir)
             qint64 sz = fileInfo.size();
             QString file_name = fileInfo.fileName();
             QString file_path = fileInfo.path();
+
+            totalBytes_ = totalBytes_ + sz;
 
             MyFiles FileData;
             FileData.size_ = sz;
@@ -646,14 +651,10 @@ void BackupWindow::scanDirectory(QDir dir)
         }
     }
 
-    while(!FileQueue_.empty()){
-       MyFiles a =  FileQueue_.dequeue();
-       qDebug() << " NOMBRE:" << a.name_ << "  SIZE:" << a.size_;
-    }
+    infoAboutTotalSize(totalBytes_);
 
     if(!PackagesQueue_.empty())
         MyMagicObject_->getTheSocket()->write(PackagesQueue_.dequeue());
-
 }
 
 void BackupWindow::mountDirAndFiles(BackupMsg bm)
@@ -662,21 +663,24 @@ void BackupWindow::mountDirAndFiles(BackupMsg bm)
         QByteArray byteArray(bm.SerializeAsString().c_str(), bm.ByteSize());
         multicastPassiveTL(byteArray);
     } else {
-        if(bm.fileordir() == 0){
+        if(bm.fileordir() == DIR){
             QDir dir(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()));
             dir.mkpath(dir.absolutePath() + "/" + QString::fromStdString(bm.nameofthing()));
-
+        } else {
+        }
             BackupMsg checked;
             checked.set_type_(8);
             checked.set_role_(whatAmI());
             QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
             MyMagicObject_->getTheSocket()->write(byteArray);
-         }
-    }
+     }
 }
 
 void BackupWindow::checkedPacks(BackupMsg bm)
 {
+    double percent;
+    double actualValue = ui->progressBar->value();
+
     if(whatAmI() == 3){
         QByteArray byteArray(bm.SerializeAsString().c_str(), bm.ByteSize());
         if(bm.role_() == PASSIVES){
@@ -688,8 +692,43 @@ void BackupWindow::checkedPacks(BackupMsg bm)
             checkPack_ = 0;
         }
     } else {
+        if(PackagesQueue_.empty() && FileQueue_.empty()){
+            ui->progressBar->setValue(0);
+            QMessageBox::information(this,tr("Transfer"),tr("Successfull transfer"));
+            ui->percent->setText("0 %");
+        }
+
         if(!PackagesQueue_.empty())
             MyMagicObject_->getTheSocket()->write(PackagesQueue_.dequeue());
+        else {
+            if(!FileQueue_.empty()){
+                MyFiles mf = FileQueue_.dequeue();
+                QFile* myfile = new QFile(mf.path_+"/"+mf.name_);
+                if(!myfile->open(QIODevice::ReadOnly)){
+                    if(!jump_)
+                        QMessageBox::warning(this,tr("File Error"),tr("Couldn't open and send some file"));
+                    jump_ = true;
+                }else{
+                    QByteArray ba = myfile->readAll();
+                    BackupMsg filemsg;
+                    filemsg.set_type_(7);
+                    filemsg.set_role_(whatAmI());
+                    filemsg.set_fileordir(FILE);
+                    filemsg.set_nameofthing(mf.name_.toStdString());
+                    filemsg.set_thingpath(mf.path_.toStdString());
+                    filemsg.set_sizefile(mf.size_);
+                    filemsg.set_content(QString(ba).toStdString());
+                    QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
+                    MyMagicObject_->getTheSocket()->write(byteArrayF);
+                    actualValue = actualValue + mf.size_;
+                    ui->progressBar->setValue(actualValue);
+                    qDebug() << "LLEGO " << ui->progressBar->value();;
+                    percent = (actualValue/totalBytes_)*100;
+                    qDebug() << "percent :" << percent;
+                    ui->percent->setText(QString::number((int)percent) + "%");
+                }
+            }
+        }
     }
 
 }
@@ -754,4 +793,22 @@ void BackupWindow::removeAll(QVector<MagicNode>& tl)
     for(int i = 0; i < tl.size() ; i++){
         tl.removeAt(i);
     }
+}
+
+void BackupWindow::infoAboutTotalSize(qint64 tb)
+{
+    BackupMsg MsgSize;
+    MsgSize.set_type_(10);
+    MsgSize.set_role_(whatAmI());
+    MsgSize.set_sizefile(tb);
+    QByteArray byteArray(MsgSize.SerializeAsString().c_str(),MsgSize.ByteSize());
+    MyMagicObject_->getTheSocket()->write(byteArray);
+    ui->progressBar->setMaximum(tb);
+    qDebug() << "Asigno maximo: "<< totalBytes_;
+}
+
+void BackupWindow::understandSize(BackupMsg bm)
+{
+    totalBytes_ = bm.sizefile();
+    ui->progressBar->setMaximum(totalBytes_);
 }

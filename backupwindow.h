@@ -12,6 +12,7 @@
 #include <QProcess>
 #include <QQueue>
 #include <QDirIterator>
+#include <QMessageBox>
 #include "protocolbuffer.pb.h"
 #include "backupserver.h"
 #include "backupuser.h"
@@ -126,6 +127,10 @@ private slots:
 
     void removeAll(QVector<MagicNode>& tl);
 
+    void infoAboutTotalSize(qint64 tb);
+
+    void understandSize(BackupMsg bm);
+
 private:
     Ui::BackupWindow *ui;
     int status_;
@@ -143,6 +148,8 @@ private:
     QQueue<QByteArray> PackagesQueue_;
     QVector<MagicNode> TransferList_;
     int checkPack_;
+    qint64 totalBytes_;
+    bool jump_;
 
 };
 

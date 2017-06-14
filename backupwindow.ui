@@ -184,7 +184,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_2">
+       <widget class="QLabel" name="percent">
         <property name="maximumSize">
          <size>
           <width>300</width>
