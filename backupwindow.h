@@ -148,7 +148,7 @@ private:
     QQueue<QByteArray> PackagesQueue_;
     QVector<MagicNode> TransferList_;
     int checkPack_;
-    double totalBytes_;
+    qint64 totalBytes_;
     bool jump_;
 
 };
