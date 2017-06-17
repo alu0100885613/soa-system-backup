@@ -674,9 +674,10 @@ void BackupWindow::mountDirAndFiles(BackupMsg bm)
             QDir dir(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()));
             dir.mkpath(dir.absolutePath() + "/" + QString::fromStdString(bm.nameofthing()));
         } else {
-            QString aux_s = ui->directoryLine->text()+"/"+QString::fromStdString(bm.thingpath());
+            QString aux_s = ui->directoryLine->text() +"/"+ QString::fromStdString(bm.origin_()) + QString::fromStdString(bm.thingpath());
             QFile file(aux_s);
-            if(!file.open(QIODevice::ReadWrite)){
+            if(!file.open(QIODevice::WriteOnly)){
+                qDebug() << file.errorString() << ": " << ui->directoryLine->text()+"/"+QString::fromStdString(bm.thingpath());
                 QMessageBox::warning(this,tr("File Error"),tr("Couldn't write some files"));
             }else{
                 file.write(QByteArray::fromStdString(bm.content()));
@@ -714,7 +715,7 @@ void BackupWindow::checkedPacks(BackupMsg bm)
     } else {
         if(PackagesQueue_.empty() && FileQueue_.empty()){
             ui->progressBar->setValue(0);
-            QMessageBox::information(this,tr("Transfer"),tr("Successfull transfer"));
+            //QMessageBox::information(this,tr("Transfer"),tr("Successfull transfer"));
             ui->percent->setText("0 %");
         }
 
@@ -734,6 +735,7 @@ void BackupWindow::checkedPacks(BackupMsg bm)
                     QByteArray ba = myfile.readAll();
                     BackupMsg filemsg;
                     filemsg.set_type_(7);
+                    filemsg.set_origin_(ui->myIpLabel->text().toStdString());
                     filemsg.set_role_(whatAmI());
                     filemsg.set_fileordir(FILE);
                     filemsg.set_nameofthing(mf.name_.toStdString());
