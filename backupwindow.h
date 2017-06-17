@@ -109,7 +109,7 @@ private slots:
 
     void backupStarting(BackupMsg c, QTcpSocket* sck);
 
-    void scanDirectory(QDir dir);
+    void scanDirectory(QDir& dir);
 
     void mountDirAndFiles(BackupMsg bm);
 
@@ -148,7 +148,7 @@ private:
     QQueue<QByteArray> PackagesQueue_;
     QVector<MagicNode> TransferList_;
     int checkPack_;
-    qint64 totalBytes_;
+    double totalBytes_;
     bool jump_;
 
 };
