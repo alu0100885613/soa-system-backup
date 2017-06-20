@@ -10,5 +10,5 @@ message BackupMsg{
     optional string nameOfThing = 7;
     optional string thingPath = 8;
     optional int64 sizeFile = 9;
-    optional string content = 10;
+    optional bytes content = 10;
 };

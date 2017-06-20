@@ -175,7 +175,7 @@ void BackupWindow::on_connectButton_clicked()
 
         timer_->start(1000);
 
-        if(whatAmI() == 3)
+        if(whatAmI() == SERVER)
             timer2_->start(5000);
 
         ui->browseButton->setEnabled(false);
@@ -392,9 +392,9 @@ void BackupWindow::keepAlive()
 
     QByteArray byteArray(kAlive.SerializeAsString().c_str(), kAlive.ByteSize());
     BlackList_ = MagicList_;
-
+    qDebug() << "IM HEre";
     multicast(byteArray);
-    ack_->start(3000);
+    ack_->start(4000);
 }
 
 void BackupWindow::wannaDisconnect(QTcpSocket* sck)
@@ -673,27 +673,41 @@ void BackupWindow::mountDirAndFiles(BackupMsg bm)
         if(bm.fileordir() == DIR){
             QDir dir(ui->directoryLine->text() + "/" + QString::fromStdString(bm.origin_()));
             dir.mkpath(dir.absolutePath() + "/" + QString::fromStdString(bm.nameofthing()));
+            BackupMsg checked;
+            checked.set_type_(8);
+            checked.set_role_(whatAmI());
+            QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
+            MyMagicObject_->getTheSocket()->write(byteArray);
         } else {
             QString aux_s = ui->directoryLine->text() +"/"+ QString::fromStdString(bm.origin_()) + QString::fromStdString(bm.thingpath());
             QFile file(aux_s);
             if(!file.open(QIODevice::WriteOnly)){
                 qDebug() << file.errorString() << ": " << ui->directoryLine->text()+"/"+QString::fromStdString(bm.thingpath());
                 QMessageBox::warning(this,tr("File Error"),tr("Couldn't write some files"));
-            }else{
-                file.write(QByteArray::fromStdString(bm.content()));
-                actualValue = actualValue + bm.sizefile();
-                ui->progressBar->setValue(actualValue);
-                percent = (actualValue/totalBytes_)*100;
 
-                ui->percent->setText(QString::number(percent) + "%");
+            }else{
+                int TotalReadBytes = bm.sizefile();
+                int CurrentReadBytes = file.size();
+                QByteArray fragment;
+                fragment = QByteArray::fromStdString(bm.content());
+                file.write(fragment);
+                CurrentReadBytes = file.size();
+                qDebug() << CurrentReadBytes << "<" << TotalReadBytes;
+
+                if(CurrentReadBytes >= TotalReadBytes){
+                    BackupMsg checked;
+                    checked.set_type_(8);
+                    checked.set_role_(whatAmI());
+                    QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
+                    MyMagicObject_->getTheSocket()->write(byteArray);
+                    actualValue = actualValue + TotalReadBytes;
+                    ui->progressBar->setValue(actualValue);
+                    percent = (actualValue/totalBytes_)*100;
+                    ui->percent->setText(QString::number(percent) + "%");
+                }
             }
             file.close();
-        }  
-        BackupMsg checked;
-        checked.set_type_(8);
-        checked.set_role_(whatAmI());
-        QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
-        MyMagicObject_->getTheSocket()->write(byteArray);
+        }
      }
 }
 
@@ -724,6 +738,7 @@ void BackupWindow::checkedPacks(BackupMsg bm)
         else {
             if(!FileQueue_.empty()){
                 MyFiles mf = FileQueue_.dequeue();
+
                 QFile myfile(mf.path_);
                 if(!myfile.open(QIODevice::ReadOnly)){
                     if(!jump_)
@@ -732,23 +747,28 @@ void BackupWindow::checkedPacks(BackupMsg bm)
                         qDebug() << "This QMess";
                     jump_ = true;
                 }else{
-                    QByteArray ba = myfile.readAll();
-                    BackupMsg filemsg;
-                    filemsg.set_type_(7);
-                    filemsg.set_origin_(ui->myIpLabel->text().toStdString());
-                    filemsg.set_role_(whatAmI());
-                    filemsg.set_fileordir(FILE);
-                    filemsg.set_nameofthing(mf.name_.toStdString());
-                    filemsg.set_thingpath(mf.path_.toStdString());
-                    filemsg.set_sizefile(mf.size_);
-                    filemsg.set_content(QString(ba).toStdString());
-                    QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
-                    MyMagicObject_->getTheSocket()->write(byteArrayF);
+                    int acc = 0;
+                    while(acc < myfile.size()){
+                        qDebug() << myfile.size();
+                        QByteArray fragment = myfile.readAll();
+                        qDebug() << "fragment size: "<< fragment.size();
+                        BackupMsg filemsg;
+                        filemsg.set_type_(7);
+                        filemsg.set_origin_(ui->myIpLabel->text().toStdString());
+                        filemsg.set_role_(whatAmI());
+                        filemsg.set_fileordir(FILE);
+                        filemsg.set_nameofthing(mf.name_.toStdString());
+                        filemsg.set_thingpath(mf.path_.toStdString());
+                        filemsg.set_sizefile(myfile.size());
+                        filemsg.set_content(fragment.toStdString());
+                        QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
+                        MyMagicObject_->getTheSocket()->write(byteArrayF);
+                        acc = myfile.size();
+                    }
+                    //QByteArray ba = myfile.readAll();
                     actualValue = actualValue + mf.size_;
                     ui->progressBar->setValue(actualValue);
-                    qDebug() << "LLEGO " << ui->progressBar->value();;
                     percent = (actualValue/totalBytes_)*100;
-                    qDebug() << totalBytes_;
                     ui->percent->setText(QString::number(percent) + "%");
                 }
                 myfile.close();

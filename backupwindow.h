@@ -13,6 +13,7 @@
 #include <QQueue>
 #include <QDirIterator>
 #include <QMessageBox>
+#include <QBuffer>
 #include "protocolbuffer.pb.h"
 #include "backupserver.h"
 #include "backupuser.h"
