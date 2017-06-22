@@ -226,7 +226,7 @@ void BackupWindow::tryToConnect()
 
 void BackupWindow::letsDisconnect()
 {
-    if(whatAmI() == 3){
+    if(whatAmI() == SERVER){
         BackupMsg byeMsg;
         byeMsg.set_type_(2);
         byeMsg.set_role_(whatAmI());
@@ -296,6 +296,7 @@ void BackupWindow::welcome()
         connect(ccVirtualUser->getTheSocket(),&QTcpSocket::readyRead,this,[=]{
             QByteArray dataIn = ccVirtualUser->getTheSocket()->readAll();
             BackupMsg pack;
+            qDebug() << dataIn.size();
             pack.ParseFromArray(dataIn.data(),dataIn.size());
             analyzePack(pack,ccVirtualUser->getTheSocket());
         });
@@ -688,8 +689,10 @@ void BackupWindow::mountDirAndFiles(BackupMsg bm)
             }else{
                 int TotalReadBytes = bm.sizefile();
                 int CurrentReadBytes = file.size();
+
                 QByteArray fragment;
                 fragment = QByteArray::fromStdString(bm.content());
+                fragment.size();
                 file.write(fragment);
                 CurrentReadBytes = file.size();
                 qDebug() << CurrentReadBytes << "<" << TotalReadBytes;
@@ -747,25 +750,22 @@ void BackupWindow::checkedPacks(BackupMsg bm)
                         qDebug() << "This QMess";
                     jump_ = true;
                 }else{
-                    int acc = 0;
-                    while(acc < myfile.size()){
-                        qDebug() << myfile.size();
-                        QByteArray fragment = myfile.readAll();
-                        qDebug() << "fragment size: "<< fragment.size();
-                        BackupMsg filemsg;
-                        filemsg.set_type_(7);
-                        filemsg.set_origin_(ui->myIpLabel->text().toStdString());
-                        filemsg.set_role_(whatAmI());
-                        filemsg.set_fileordir(FILE);
-                        filemsg.set_nameofthing(mf.name_.toStdString());
-                        filemsg.set_thingpath(mf.path_.toStdString());
-                        filemsg.set_sizefile(myfile.size());
-                        filemsg.set_content(fragment.toStdString());
-                        QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
-                        MyMagicObject_->getTheSocket()->write(byteArrayF);
-                        acc = myfile.size();
-                    }
-                    //QByteArray ba = myfile.readAll();
+                    qDebug() << myfile.size();
+                    QByteArray fragment = myfile.readAll();
+                    BackupMsg filemsg;
+                    filemsg.set_type_(7);
+                    filemsg.set_origin_(ui->myIpLabel->text().toStdString());
+                    filemsg.set_role_(whatAmI());
+                    filemsg.set_fileordir(FILE);
+                    filemsg.set_nameofthing(mf.name_.toStdString());
+                    filemsg.set_thingpath(mf.path_.toStdString());
+                    filemsg.set_sizefile(myfile.size());
+                    filemsg.set_content(fragment.toStdString());
+                    QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
+                    MyMagicObject_->getTheSocket()->write(byteArrayF);
+                    qDebug() << byteArrayF.size();
+
+
                     actualValue = actualValue + mf.size_;
                     ui->progressBar->setValue(actualValue);
                     percent = (actualValue/totalBytes_)*100;

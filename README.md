@@ -1,62 +1,47 @@
 # Backup distribuido
-Con la ayuda de Qt vamos a crear nuestro propio sistema de backup distribuido.
+Sistema de backup distribuido utilizando Qt.
 
-En principio la aquitectura será muchos a uno. Es decir, un cliente enviará los datos a un servidor. Este los distribuirá a varios clientes, que a su vez almacenarán los archivos en su sistema de archivos local:
+Características del sistema desarrollado:
 
- * Necesitaremos dos programas: un servidor y un cliente de backup.
- * La función del servidor es recibir los datos desde el cliente de origen y retransmitirlos hacia los clientes de destino.
-   * Sólo hace falta que haya un servidor en ejecución.
-   * El puerto de escucha del servidor debe ser configurable desde la GUI.
- * Al mismo tiempo se pueden estar ejecutando múltiples clientes en distintas máquinas.
-   * Uno será el origen de los datos a copiar. Los leerá y enviará al servidor para su retransmisión.
-   * El resto recibirán los datos desde el servidor para hacer la copia de seguridad en un directorio local.
-   * La IP y el puerto del servidor al que deben conectarse los clientes debe ser configurable desde la GUI
-   * En cada cliente la carpeta origen o destino de los archivos debe ser configurable desde la GUI.
- * El sistema podría funcionar a así:
-   1. El servidor se inicia. El usuario puede configurar el puerto y ponerlo a la escucha.
-   2. Un cliente se inicia.
-      * El usuario puede configurar la dirección del servidor, elegir la carpeta de destino y conectarlo como cliente de destino.
-      * O, el usuario puede configurar la dirección del servidor, elegir la carpeta de origen, indicar cuántos destinos deben estar conectados y conectar como cliente de origen.
-   3. Los clientes de destino esperan indefinidamente hasta que el servidor inicia la transferencia.
-   4. Los clientes de origen esperan hasta que hay suficientes clientes conectados en el servidor, entonces empiezan a recorrer el directorio y a transferir hacia el servidor.
-   5. El servidor envía los datos recibidos del cliente origen a los clientes destino, que deben reconstruir el arbol de directorios en su carpeta local.
-   6. Durante la transferencia los clientes y el servidor deben mostrar el progreso de la copia:
-      * El nombre del archivo que se está copiando actualmente.
-      * Una barra de progreso, que puede ser global de toda la copia o sólo del progreso sobre el archivo actual.
-   7. Hay que incluir medidas de contrapresión para evitar problemas como los mencionados en la teoría.
+    * Existen 3 tipos de modos para el programa:
+        - Modo `Active User` (Los que envían los archivos, puede haber más de uno al mismo tiempo conectado)
+        - Modo `Passive User` (Los que reciben los archivos y los alojan, puede haber más de uno al mismo tiempo)
+        - Modo `Server` (El que tiene contacto con todos los clientes y reenvía los archivos, 1 por puerto)
 
-## Cómo empezar
 
- 1. Acepta la [tarea asignada de GitHub Classroom](https://classroom.github.com/assignment-invitations/e00c36345e701f3f266fbc98b2a979a5). Así obtendrás tu propio repositorio como una copia de este. A este repositorio lo llamaremos `upstream`.
- 2. Haz un [fork](https://guides.github.com/activities/forking/) de `upstream`. Al nuevo repositorio lo llamaremos `origin`.
- 3. [Clona](http://gitref.org/creating/#clone) `origin` en tu ordenador.
- 4. Trabaja en tu copia local para desarrollar tu monitor del sistema, siguiendo los pasos indicados en el siguiente apartado.
- 5. Modifica README.md usando [Markdown](https://guides.github.com/features/mastering-markdown/) para:
-   1. Explicar cómo compilar y probar la aplicación, incluyendo los requisitos requeridos para hacerlo.
-   2. Explicar los detalles del diseño del protocolo utilizado. Imagina que lo estás explicando para que otro desarrollador pueda crear un cliente o un servidor compatible.
-   3. Comentar las características implementadas.
- 5. [Sube](http://gitref.org/remotes/#push) los cambios al repositorio `origin` en GitHub.
- 6. Crea un [pull request](https://help.github.com/articles/creating-a-pull-request) de `origin` a `upstream` para entregar la práctica.
+    * Los usuarios activos solo podrán transmitir cuando exista 1 usuario pasivo conectado al mismo servidor. Solo podrá transmitir un usuario activo al mismo tiempo, los otros si lo intentan recibirán un mensaje de canal ocupado.
+    * No se permitirá realizar conexiones sin haber indicado previamente el modo y el directorio.
+    * Los campos y botones que un modo no se utilizen, serán bloqueados.
+    * Existirá un timer que indicará el tiempo desde que se pulsó el botón de Connect.
+    * Existirá un comboBox que indicará el número de determinados tipos de usuarios conectados. (Los activos verán a los pasivos y los pasivos a los activos, y el Server a ambos)
+    * Existirá una barra de progreso
+    * Existirán dos labels, uno encima de otro, el de encima es la ip de la interfaz de red del propio usuario y el de debajo es el puerto al se que está conectado.
+    * Se pueden enviar árboles de directorios.
+
+
+## Compilación y Requisitos
+
+ 1. Se deberá tener instalada la libería protobuf y referenciarla desde el .pro.
+ 2. En las Settings del proyecto se debe desactivar el Shadow Build
+ 3. En la carpeta del proyecto en consola habrá que generar los archivos de protobuf ejecutando `protoc 
+-cpp_out. protocolbuffer.proto`
+ 4. Ejecutar el comando `qmake`
+ 5. Ejecutar `make`
 
 ## Protocolo
 
-El paso más importante es el diseño del protocolo. Algunas cuestiones son generales:
+ * Protocolo de transporte TCP.
+ * Protocolo de texto.
+ * Protocolo: [Protocol Buffer](https://jmtorres.webs.ull.es/me/2013/03/implementando-un-protocolo-con-protocol-buffers/)
+ * Envío de paquete KeepAlive cada 15 segundos, activando un timer que decida el tiempo en el que puede llegar el ACK antes de tomar a algún cliente por inactivo.
+ * Diferenciación de mensajes por medio de un campo type_ en la trama.
+ * El servidor informará a todos sobre, el número de usuarios de cada tipo cuando se produzca una actualización en este contador. Internamente los usuarios activos activarán su botón de Send cuando sean avisados que hay algún usuario pasivo conectado.
+ * Antes de la transferencia de archivo se enviará el tamaño total de archivos, su ruta y tamaño individual.
+ * La barra de progreso se calculará mediante el tamaño total de todos los archivos y lo que actualmente se ha enviado/escrito.
+ * Con cada envío de directorio o archivo, se indicará de que tipo es y todos los pasivos responderán con paquetes de confirmación para esperar que todos hayan recibido correctamente, antes de enviar el siguiente archivo o directorio.
+ * Recorriendo el directorio a enviar se recorrerá e irán enviando los directorios, mientras que los datos de los ficheros se meterán en una cola para su posterior extracción.
+ * El servidor mantendrá una lista de los socket que están en fase de transferencia por si a mitad de una se uno o se va algún usuario.
+ * Antes de cada desconexión el servidor será informado e informará al resto de usuarios, inclusive si es él el que se desconecta, en este caso forzará a todos los clientes a terminar su conexión.
 
- * ¿Qué protocolo de transporte usar? TCP, UDP, etc.
- * ¿Protocolo binario o texto?
- * ¿Usar un formato conocido...? [JSON](http://doc.qt.io/qt-5/json.html), [Protocol Buffer](https://jmtorres.webs.ull.es/me/2013/03/implementando-un-protocolo-con-protocol-buffers/), etc.
- * ¿...o crear nuestro propio formato? ¿con delimitadores? ¿tamaño fijo? ¿inspirarnos en un protocolo conocido, como HTTP?
- * ¿Cómo vamos a comprobar que la conexión sigue activa.
 
-Otras dependen de la aplicación concreta que estamos a desarrollando. Hay que pensar en las distintas etapas y qué información hay que comunicar y a quién en cada una:
-
- * ¿Serán necesarios diferentes tipos de mensajes? ¿cómo se van a diferenciar unos de otros?
- * ¿Cómo va a saber el cliente origen cuándo iniciar la transferencia?
- * ¿Qué información debe ir junto a los datos de los archivos? ¿ruta? ¿tamaño?
- * ¿Qué información hace falta para mantener actualizada las barras de progreso?
- 
-Puedes elegir la soluciones que prefieras.
-
-## Opcional
-
- * No sería muy complicado tener un sistema muchos a muchos. Muchos clientes origen mandando sus copias a un servidor para que los múltiples clientes destino hagan copia. En ese caso sería conveniente que en los paquetes se incluyera el nombre de la máquina origen, para organizar los archivos en distintos subdirectorios, según el cliente que los envía, evitando colisiones.
+Eduardo Borges Fernández. ULL.
