@@ -11,4 +11,5 @@ message BackupMsg{
     optional string thingPath = 8;
     optional int64 sizeFile = 9;
     optional bytes content = 10;
+    optional int64 fragmented = 11;
 };

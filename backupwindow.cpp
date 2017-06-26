@@ -26,7 +26,8 @@ BackupWindow::BackupWindow(QWidget *parent) :
     TransferList_(),
     checkPack_(0),
     totalBytes_(0),
-    jump_(false)
+    jump_(false),
+    seq_(0)
 {
     ui->setupUi(this);
 
@@ -176,7 +177,7 @@ void BackupWindow::on_connectButton_clicked()
         timer_->start(1000);
 
         if(whatAmI() == SERVER)
-            timer2_->start(5000);
+            timer2_->start(15000);
 
         ui->browseButton->setEnabled(false);
         ui->modeComboBox->setEnabled(false);
@@ -395,7 +396,7 @@ void BackupWindow::keepAlive()
     BlackList_ = MagicList_;
     qDebug() << "IM HEre";
     multicast(byteArray);
-    ack_->start(4000);
+    ack_->start(14000);
 }
 
 void BackupWindow::wannaDisconnect(QTcpSocket* sck)
@@ -408,7 +409,6 @@ void BackupWindow::wannaDisconnect(QTcpSocket* sck)
                     if(MagicList_[i].idMode_ == ACTIVES){
                         qDebug() << "removeall";
                         removeAll(TransferList_);
-                        qDebug() << TransferList_.size() << TransferList_.first().pointer_;
                     } else {
                         qDebug() << "removeOne";
                         removeThatItem(TransferList_,MagicList_[i]);
@@ -580,21 +580,23 @@ void BackupWindow::executeBlackList()
 
 void BackupWindow::on_sendButton_clicked()
 {
-    BackupMsg sendStart;
-    sendStart.set_type_(6);
-    sendStart.set_origin_(ui->myIpLabel->text().toStdString());
-    sendStart.set_role_(whatAmI());
+    if(MyMagicObject_->getTheSocket()->state() == QAbstractSocket::ConnectedState){
+        BackupMsg sendStart;
+        sendStart.set_type_(6);
+        sendStart.set_origin_(ui->myIpLabel->text().toStdString());
+        sendStart.set_role_(whatAmI());
 
-    QByteArray byteArray(sendStart.SerializeAsString().c_str(), sendStart.ByteSize());
-    MyMagicObject_->getTheSocket()->write(byteArray);
-    MyMagicObject_->getTheSocket()->waitForBytesWritten();
+        QByteArray byteArray(sendStart.SerializeAsString().c_str(), sendStart.ByteSize());
+        MyMagicObject_->getTheSocket()->write(byteArray);
+        MyMagicObject_->getTheSocket()->waitForBytesWritten();
 
 
-    ui->browseButton->setEnabled(false);
-    QDir sourceDir(ui->directoryLine->text());
+        ui->browseButton->setEnabled(false);
+        QDir sourceDir(ui->directoryLine->text());
 
-    sourceDir.setFilter(QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Files | QDir::Dirs);
-    scanDirectory(sourceDir);
+        sourceDir.setFilter(QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Files | QDir::Dirs);
+        scanDirectory(sourceDir);
+    }
 }
 
 void BackupWindow::backupStarting(BackupMsg bm, QTcpSocket* sck)
@@ -677,37 +679,53 @@ void BackupWindow::mountDirAndFiles(BackupMsg bm)
             BackupMsg checked;
             checked.set_type_(8);
             checked.set_role_(whatAmI());
+            checked.set_fragmented(0);
             QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
             MyMagicObject_->getTheSocket()->write(byteArray);
         } else {
+            bool err = false;
             QString aux_s = ui->directoryLine->text() +"/"+ QString::fromStdString(bm.origin_()) + QString::fromStdString(bm.thingpath());
+            QString fragmentResend = QString::fromStdString(bm.thingpath());
             QFile file(aux_s);
-            if(!file.open(QIODevice::WriteOnly)){
-                qDebug() << file.errorString() << ": " << ui->directoryLine->text()+"/"+QString::fromStdString(bm.thingpath());
-                QMessageBox::warning(this,tr("File Error"),tr("Couldn't write some files"));
-
-            }else{
+            if(bm.fragmented() == 1){
+                if(!file.open(QIODevice::WriteOnly | QIODevice::Append)){
+                    qDebug() << file.errorString() << ": " << ui->directoryLine->text()+"/"+QString::fromStdString(bm.thingpath());
+                    QMessageBox::warning(this,tr("File Error"),tr("Couldn't write some files"));
+                    err = true;
+                }
+            } else{
+                if(!file.open(QIODevice::WriteOnly)){
+                    qDebug() << file.errorString() << ": " << ui->directoryLine->text()+"/"+QString::fromStdString(bm.thingpath());
+                    QMessageBox::warning(this,tr("File Error"),tr("Couldn't write some files"));
+                    err = true;
+                }
+            }
+            if(!err){
                 int TotalReadBytes = bm.sizefile();
                 int CurrentReadBytes = file.size();
 
                 QByteArray fragment;
                 fragment = QByteArray::fromStdString(bm.content());
-                fragment.size();
                 file.write(fragment);
                 CurrentReadBytes = file.size();
                 qDebug() << CurrentReadBytes << "<" << TotalReadBytes;
 
+                BackupMsg checked;
+                checked.set_type_(8);
+                checked.set_role_(whatAmI());
+                checked.set_thingpath(fragmentResend.toStdString());
+
                 if(CurrentReadBytes >= TotalReadBytes){
-                    BackupMsg checked;
-                    checked.set_type_(8);
-                    checked.set_role_(whatAmI());
-                    QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
-                    MyMagicObject_->getTheSocket()->write(byteArray);
+                    checked.set_fragmented(0);
                     actualValue = actualValue + TotalReadBytes;
                     ui->progressBar->setValue(actualValue);
                     percent = (actualValue/totalBytes_)*100;
                     ui->percent->setText(QString::number(percent) + "%");
+                } else {
+                    checked.set_fragmented(1);
                 }
+                QByteArray byteArray(checked.SerializeAsString().c_str(), checked.ByteSize());
+                MyMagicObject_->getTheSocket()->write(byteArray);
             }
             file.close();
         }
@@ -730,7 +748,7 @@ void BackupWindow::checkedPacks(BackupMsg bm)
             checkPack_ = 0;
         }
     } else {
-        if(PackagesQueue_.empty() && FileQueue_.empty()){
+        if(PackagesQueue_.empty() && FileQueue_.empty() && bm.fragmented() == 0){
             ui->progressBar->setValue(0);
             //QMessageBox::information(this,tr("Transfer"),tr("Successfull transfer"));
             ui->percent->setText("0 %");
@@ -739,10 +757,18 @@ void BackupWindow::checkedPacks(BackupMsg bm)
         if(!PackagesQueue_.empty())
             MyMagicObject_->getTheSocket()->write(PackagesQueue_.dequeue());
         else {
-            if(!FileQueue_.empty()){
-                MyFiles mf = FileQueue_.dequeue();
-
+            if(!FileQueue_.empty() || bm.fragmented() == 1){
+                MyFiles mf;
+                if(bm.fragmented() == 0){
+                    seq_ = 0;
+                    mf = FileQueue_.dequeue();
+                } else {
+                    mf.path_ = QString::fromStdString(bm.thingpath());
+                    seq_++;
+                }
                 QFile myfile(mf.path_);
+                QFileInfo myfileInfo(myfile);
+
                 if(!myfile.open(QIODevice::ReadOnly)){
                     if(!jump_)
                         qDebug() << myfile.fileName();
@@ -750,34 +776,52 @@ void BackupWindow::checkedPacks(BackupMsg bm)
                         qDebug() << "This QMess";
                     jump_ = true;
                 }else{
-                    qDebug() << myfile.size();
-                    QByteArray fragment = myfile.readAll();
-                    BackupMsg filemsg;
-                    filemsg.set_type_(7);
-                    filemsg.set_origin_(ui->myIpLabel->text().toStdString());
-                    filemsg.set_role_(whatAmI());
-                    filemsg.set_fileordir(FILE);
-                    filemsg.set_nameofthing(mf.name_.toStdString());
-                    filemsg.set_thingpath(mf.path_.toStdString());
-                    filemsg.set_sizefile(myfile.size());
-                    filemsg.set_content(fragment.toStdString());
-                    QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
-                    MyMagicObject_->getTheSocket()->write(byteArrayF);
-                    qDebug() << byteArrayF.size();
+                    if(myfile.size() < 100000){
+                        qDebug() << myfile.size();
+                        QByteArray fragment = myfile.readAll();
+                        BackupMsg filemsg;
+                        filemsg.set_type_(7);
+                        filemsg.set_origin_(ui->myIpLabel->text().toStdString());
+                        filemsg.set_role_(whatAmI());
+                        filemsg.set_fileordir(FILE);
+                        filemsg.set_nameofthing(myfile.fileName().toStdString());
+                        filemsg.set_thingpath(mf.path_.toStdString());
+                        filemsg.set_sizefile(myfile.size());
+                        filemsg.set_content(fragment.toStdString());
+                        filemsg.set_fragmented(0);
+                        QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
+                        MyMagicObject_->getTheSocket()->write(byteArrayF);
+                        qDebug() << byteArrayF.size();
+                    } else {
+                        myfile.seek((100000*seq_));
+                        QByteArray fragment = myfile.read(100000);
+                        BackupMsg filemsg;
+                        filemsg.set_type_(7);
+                        filemsg.set_origin_(ui->myIpLabel->text().toStdString());
+                        filemsg.set_role_(whatAmI());
+                        filemsg.set_fileordir(FILE);
+                        filemsg.set_nameofthing(myfile.fileName().toStdString());
+                        filemsg.set_thingpath(mf.path_.toStdString());
+                        filemsg.set_sizefile(myfile.size());
+                        filemsg.set_content(fragment.toStdString());
+                        filemsg.set_fragmented(1);
+                        QByteArray byteArrayF(filemsg.SerializeAsString().c_str(), filemsg.ByteSize());
+                        MyMagicObject_->getTheSocket()->write(byteArrayF);
+                    }
+                }
 
 
                     actualValue = actualValue + mf.size_;
                     ui->progressBar->setValue(actualValue);
                     percent = (actualValue/totalBytes_)*100;
                     ui->percent->setText(QString::number(percent) + "%");
+                    myfile.close();
                 }
-                myfile.close();
             }
         }
 
-    }
-
 }
+
 
 void BackupWindow::includePassives()
 {

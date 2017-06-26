@@ -151,6 +151,7 @@ private:
     int checkPack_;
     qint64 totalBytes_;
     bool jump_;
+    int seq_;
 
 };
 
